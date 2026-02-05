@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>誰是臥底 - 簡易版</title>
+    <style>
+        :root {
+            /* 暗黑模式配色變數 */
+            --primary: #3498db;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --bg: #121212;        /* 深色背景 */
+            --card: #1e1e1e;      /* 卡片背景 */
+            --text: #e0e0e0;      /* 主要文字 */
+            --text-muted: #a0a0a0;
+            --border: #333333;
+            --input-bg: #2d2d2d;
+            --hover: #2c3e50;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 1;
+        }
+        h1, h2, h3 { text-align: center; color: var(--text); margin-top: 0;}
+        .screen { display: none; }
+        .active { display: block; }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.2s;
+            font-weight: bold;
+        }
+        button:hover { filter: brightness(1.1); }
+        button:disabled { background: #555; cursor: not-allowed; color: #888; }
+        button.danger { background: var(--danger); }
+        button.secondary { background: #555; }
+        button.success { background: var(--success); }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        input:focus, select:focus { border-color: var(--primary); outline: none; }
+
+        .room-item {
+            background: #252525;
+            border: 1px solid var(--border);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-card {
+            background: #252525;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid transparent;
+        }
+        .player-card.is-me { border-color: var(--primary); background: #1a2634; }
+        .player-card.dead { opacity: 0.5; background: #1a1a1a; }
+        .player-card.dead strong { text-decoration: line-through; color: var(--danger); }
+
+        .word-display {
+            background: linear-gradient(135deg, #2c3e50 0%, #000000 100%);
+            padding: 25px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            border-radius: 12px;
+            margin: 20px 0;
+            color: #f1c40f;
+            border: 1px solid #444;
+            user-select: none;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        .tag {
+            font-size: 11px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            background: #444;
+            color: #ddd;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+        .tag.host { background: #f39c12; color: #000; }
+        .tag.vote-count { background: var(--danger); color: white; font-weight: bold; }
+
+        .vote-btn {
+            background: var(--danger);
+            width: auto;
+            padding: 6px 15px;
+            font-size: 13px;
+            margin: 0;
+            border-radius: 20px;
+        }
+
+        /* 遮罩層 (顯示結果用) */
+        #overlay-result {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .result-title { font-size: 20px; color: #888; margin-bottom: 10px; }
+        .result-name { font-size: 48px; font-weight: bold; color: var(--warning); margin: 10px 0; }
+        .result-role { font-size: 32px; margin-bottom: 30px; }
+        .result-role.spy { color: var(--danger); }
+        .result-role.civilian { color: var(--success); }
+        .result-status { 
+            font-size: 24px; 
+            border: 2px solid #555; 
+            padding: 10px 40px; 
+            border-radius: 50px; 
+            margin-top: 30px; 
+            display: inline-block;
+            background: #111;
+        }
+        
+        /* 隱藏的管理員按鈕樣式 */
+        .admin-nuke-btn {
+            background: transparent;
+            border: 1px solid #555;
+            color: #666;
+            cursor: pointer;
+            padding: 2px 6px;
+            font-size: 10px;
+            margin-left: 5px;
+            border-radius: 4px;
+        }
+        .admin-nuke-btn:hover { background: var(--danger); color: white; border-color: var(--danger); }
+        .admin-reveal {
+            font-size: 11px;
+            font-family: monospace;
+            margin-top: 2px;
+            background: #000;
+            padding: 2px 4px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div id="overlay-result">
+    <div class="result-title">本輪投票結果</div>
+    <div id="res-name" class="result-name">???</div>
+    <div id="res-role" class="result-role">身分：<span id="res-role-text">---</span></div>
+    
+    <div id="res-game-status" class="result-status">遊戲繼續</div>
+
+    <div style="margin-top: 50px; width: 100%; max-width: 300px;">
+        <button onclick="app.closeOverlay()" class="success">確認</button>
+    </div>
+</div>
+
+<div class="container">
+    <div id="screen-login" class="screen active">
+        <h1>🕵️ 誰是臥底</h1>
+        <p style="text-align:center; color:var(--text-muted);">暗黑版 - 請輸入暱稱</p>
+        <input type="text" id="username" placeholder="你的暱稱">
+        <button onclick="app.login()">進入大廳</button>
+    </div>
+
+    <div id="screen-lobby" class="screen">
+        <h2>遊戲大廳</h2>
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <span>玩家: <span id="display-name" style="font-weight:bold; color:var(--primary);"></span></span>
+            <button style="width:auto; margin:0;" onclick="app.showCreateRoom()">+ 創建房間</button>
+        </div>
+        <h3>房間列表</h3>
+        <div id="room-list">正在讀取...</div>
+    </div>
+
+    <div id="screen-create" class="screen">
+        <h2>創建新房間</h2>
+        <label>玩家總人數 (3-10)</label>
+        <select id="total-players">
+            <option value="3">3人</option>
+            <option value="4">4人</option>
+            <option value="5">5人</option>
+            <option value="6" selected>6人</option>
+            <option value="7">7人</option>
+            <option value="8">8人</option>
+            <option value="9">9人</option>
+            <option value="10">10人</option>
+        </select>
+
+        <label>臥底人數</label>
+        <select id="spy-count">
+            <option value="1">1人</option>
+            <option value="2">2人</option>
+            <option value="3">3人</option>
+        </select>
+
+        <button onclick="app.createRoom()">確認創建</button>
+        <button class="secondary" onclick="app.switchScreen('screen-lobby')">取消</button>
+    </div>
+
+    <div id="screen-room" class="screen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+            <h2 id="room-id-display" style="margin:0; font-size: 18px;">房號: ----</h2>
+            <button class="secondary" style="width:auto; padding:6px 12px; font-size:14px; margin:0;" onclick="app.leaveRoom()">
+                離開
+            </button>
+        </div>
+
+        <div id="game-area" style="display:none;">
+            <div class="word-display" id="word-card">
+                <div style="font-size:14px; color:#888; font-weight:normal; margin-bottom:5px;">你的詞語</div>
+                <span id="my-word">???</span>
+            </div>
+            <p style="text-align:center; font-size:12px; color:#666; margin-top:-10px;">
+                點擊上方卡片可 隱藏/顯示
+            </p>
+        </div>
+
+        <div style="display:flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
+            <h3 style="margin:0;">玩家列表 (<span id="player-count">0</span>/<span id="max-player-count">0</span>)</h3>
+            <span id="status-badge" class="tag" style="font-size:14px; padding: 4px 8px;">等待中</span>
+        </div>
+        
+        <div id="player-list"></div>
+
+        <div id="host-controls" style="display:none; border-top: 1px dashed #444; padding-top:15px; margin-top:20px;">
+            <p style="text-align:center; color:#666; font-size:12px; margin:0 0 10px 0;">👑 房主控制區</p>
+            
+            <button onclick="app.startGame()" id="btn-start" class="success">開始遊戲</button>
+            
+            <div id="ingame-controls" style="display:none;">
+                <button onclick="app.startVoting()" id="btn-start-vote">📢 開始投票</button>
+                <button onclick="app.endVoting()" id="btn-end-vote" class="danger" style="display:none;">🛑 結束投票並揭曉</button>
+            </div>
+
+            <button onclick="app.nextRound()" id="btn-restart" style="display:none;">🔄 下一局 (換詞)</button>
+            
+            <button class="danger" onclick="app.deleteRoom()" style="margin-top:15px; background: transparent; border:1px solid var(--danger); color: var(--danger);">
+                ⚠️ 解散房間
+            </button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+    // --- 1. 配置與初始化 ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyC7PZLTTNf17cfp9gCHudWiWX8SYPSCdDI",
+        authDomain: "onlineeasyraygame.firebaseapp.com",
+        databaseURL: "https://onlineeasyraygame-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "onlineeasyraygame",
+        storageBucket: "onlineeasyraygame.firebasestorage.app",
+        messagingSenderId: "622138442346",
+        appId: "1:622138442346:web:02745ec52f0e83ad428013",
+        measurementId: "G-PZB26XW21J"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // --- 2. 完整詞語庫 ---
+    const rawWords = `
+1. 洗衣粉——皂角粉
+2. 甄子丹——李連杰
+3. 魚香肉絲——四喜丸子
+4. 唇膏——口紅
+5. 紙巾——手帕
+6. 葡萄——提子
+7. 蝴蝶——蜜蜂
+8. 夏家三千金——愛情睡醒了
+9. 餃子——包子
+10. 包青天——狄仁傑
+11. 麻婆豆腐——皮蛋豆腐
+12. 鐵觀音——碧螺春
+13. 手機——座機
+14. 玫瑰——月季
+15. 情人節——光棍節
+16. 水盆——水桶
+17. 杭州——蘇州
+18. 被子——床單
+19. 雞蛋——鴨蛋
+20. 綠茶——苦茶
+21. 白菜——生菜
+22. 美人心計——傾世皇妃
+23. 童話——神話
+24. 金庸——古龍
+25. 降龍十八掌——九陰白骨爪
+26. 雙胞胎——龍鳳胎
+27. 魔術師——魔法師
+28. 餅乾——薯片
+29. 金絲猴——大白兔(奶糖)
+30. 兩小無猜——青梅竹馬
+31. 烤肉——涮肉
+32. 獎牌——金牌
+33. 十面埋伏——四面楚歌
+34. 男朋友——前男友
+35. 語無倫次——詞不達意
+36. 過山車——碰碰車
+37. 流星花園——花樣男子
+38. 鼠目寸光——井底之蛙
+39. 乾洗機——甩乾機
+40. 謝娜——李湘
+41. 成吉思汗——努爾哈赤
+42. 新年——跨年
+43. 小品——話劇
+44. 麥克風——擴音器
+45. 卷髮——直髮
+46. 作文——論文
+47. 反彈琵琶——亂彈棉花
+48. 洗髮露——護髮素
+49. 謝娜張傑——鄧超孫儷
+50. 太監——人妖
+51. 果粒橙——鮮橙多
+52. 玻璃——鏡子
+53. 豆漿——牛奶
+54. 王菲——那英
+55. 貴妃醉酒——黛玉葬花
+56. 警察——捕快
+57. 泡泡糖——棒棒糖
+58. 宮鎖心玉——宮鎖珠簾
+59. 紅燒牛肉麵——香辣牛肉麵
+60. 婚紗——喜服
+61. 作家——編劇
+62. 小籠包——灌湯包
+63. 結婚——訂婚
+64. 那英——韓紅
+65. 富二代——高富帥
+66. 湯圓——丸子
+67. 甄嬛傳——紅樓夢
+68. 郭德綱——周立波
+69. 菠蘿蜜——榴槤
+70. 牛肉乾——豬肉脯
+71. 剩女——御姐
+72. 梁山伯與祝英台——羅密歐與朱麗葉
+73. 圖書館——圖書店
+74. 張韶涵——王心凌
+75. 薰衣草——滿天星
+76. 氣泡——水泡
+77. 首爾——東京
+78. 公交——地鐵
+79. 劉詩詩——劉亦菲
+80. 哈密瓜——西瓜
+81. 臉盆——水桶
+82. 面包——蛋糕
+83. 丑小鴨——灰姑娘
+84. 紙巾——濕巾
+85. 生活費——零花錢
+86. 勇往直前——全力以赴
+87. 福爾摩斯——工藤新一
+88. 孟非——樂嘉
+89. 飯桶——飯碗
+90. 壁紙——貼畫
+91. 小沈陽——宋小寶
+92. 董永——許仙
+93. 動物——植物
+94. 土豆粉——酸辣粉
+95. 蜘蛛俠——蝙蝠俠
+96. 胡子——眉毛
+97. 盒子——箱子
+98. 天天向上——非誠勿擾
+99. 海豚——海獅
+100. 何炅——維嘉
+101. 近視眼鏡——隱形眼鏡
+102. 老佛爺——老天爺
+103. 森馬——以純
+104. 太陽傘——雨傘
+105. 吉他——琵琶
+106. 神鵰俠侶——天龍八部
+107. 風扇——空調
+108. 班主任——輔導員
+109. 鴨舌帽——遮陽帽
+110. 若曦——晴川
+111. 保安——保鏢
+112. 電腦——iPad
+113. 漢堡包——肉夾饃
+114. 媽媽——娘
+115. 同學——同桌
+116. 端午節——中秋節
+117. 蝴蝶——飛蛾
+118. 油條——麻花
+119. 高跟鞋——增高鞋
+120. 橙子——橘子
+121. 晨光——真彩
+122. 酸菜魚——水煮魚
+123. 枕頭——抱枕
+124. 胖子——肥肉
+125. 辣椒——芥末
+126. 龍鳳呈祥——鴛鴦戲水
+127. 沐浴露——沐浴鹽
+128. 樓梯——電梯
+129. 冠軍——第一
+130. 北魏——南朝
+    `;
+
+    const wordPairs = rawWords.trim().split('\n').map(line => {
+        const parts = line.split(/[.——]+/);
+        if(parts.length >= 3) return [parts[1].trim(), parts[2].trim()];
+        return null;
+    }).filter(p => p !== null);
+
+    // --- 3. 遊戲邏輯與全域變數 ---
+    window.gameState = {
+        user: { name: "", id: "" },
+        currentRoomId: null,
+        isHost: false,
+        wordVisible: true,
+        localVoteTarget: null,
+        isAdmin: false // 新增：預設非管理員
+    };
+
+    const generateId = () => Math.random().toString(36).substr(2, 9);
+
+    window.app = {
+        login: () => {
+            const name = document.getElementById('username').value.trim();
+            if (!name) return alert("請輸入暱稱！");
+            gameState.user.name = name;
+            
+            // --- 隱藏功能觸發點 ---
+            if (name === "araygame") {
+                gameState.isAdmin = true;
+            }
+            // ---------------------
+
+            gameState.user.id = generateId();
+            
+            document.getElementById('display-name').innerText = name;
+            window.app.switchScreen('screen-lobby');
+            
+            const roomsRef = ref(db, 'rooms');
+            onValue(roomsRef, (snapshot) => {
+                const rooms = snapshot.val();
+                renderRoomList(rooms);
+            });
+        },
+
+        switchScreen: (screenId) => {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        },
+
+        showCreateRoom: () => window.app.switchScreen('screen-create'),
+
+        createRoom: async () => {
+            const maxPlayers = parseInt(document.getElementById('total-players').value);
+            const spyCount = parseInt(document.getElementById('spy-count').value);
+            
+            if (spyCount >= maxPlayers) return alert("臥底人數不能大於或等於總人數！");
+
+            const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+            gameState.currentRoomId = roomId;
+            gameState.isHost = true;
+
+            const roomRef = ref(db, 'rooms/' + roomId);
+            await set(roomRef, {
+                config: { maxPlayers, spyCount },
+                status: 'waiting', 
+                players: {
+                    [gameState.user.id]: {
+                        name: gameState.user.name,
+                        isHost: true,
+                        status: 'alive',
+                        votes: 0,
+                        voteTarget: null
+                    }
+                },
+                result: null,
+                createdAt: Date.now()
+            });
+
+            onDisconnect(ref(db, `rooms/${roomId}/players/${gameState.user.id}`)).remove();
+            enterRoom(roomId);
+        },
+
+        deleteRoom: async () => {
+             if(!confirm("確定要解散房間嗎？")) return;
+             await remove(ref(db, `rooms/${gameState.currentRoomId}`));
+             window.app.leaveRoom();
+        },
+
+        // --- 新增：管理員專用強制刪除 ---
+        adminForceDelete: async (targetRoomId) => {
+            if(!confirm(`[管理員] 確定強制解散房間 ${targetRoomId}？`)) return;
+            await remove(ref(db, `rooms/${targetRoomId}`));
+        },
+        // -----------------------------
+
+        joinRoom: async (roomId) => {
+            const roomRef = ref(db, `rooms/${roomId}`);
+            gameState.currentRoomId = roomId;
+            gameState.isHost = false;
+
+            const playerRef = ref(db, `rooms/${roomId}/players/${gameState.user.id}`);
+            await set(playerRef, {
+                name: gameState.user.name,
+                isHost: false,
+                status: 'alive',
+                votes: 0,
+                voteTarget: null
+            });
+            
+            onDisconnect(playerRef).remove();
+            enterRoom(roomId);
+        },
+
+        leaveRoom: async () => {
+            if(gameState.currentRoomId) {
+                const playerRef = ref(db, `rooms/${gameState.currentRoomId}/players/${gameState.user.id}`);
+                await remove(playerRef);
+            }
+            gameState.currentRoomId = null;
+            gameState.isHost = false;
+            window.app.switchScreen('screen-lobby');
+        },
+
+        startGame: async () => {
+            const roomId = gameState.currentRoomId;
+            const pair = wordPairs[Math.floor(Math.random() * wordPairs.length)];
+            const flip = Math.random() > 0.5;
+            const civilianWord = flip ? pair[0] : pair[1];
+            const spyWord = flip ? pair[1] : pair[0];
+
+            update(ref(db, `rooms/${roomId}`), { 
+                status: 'processing', 
+                words: { civilian: civilianWord, spy: spyWord },
+                result: null 
+            });
+        },
+
+        startVoting: async () => {
+            const roomId = gameState.currentRoomId;
+            update(ref(db, `rooms/${roomId}`), { status: 'voting' });
+        },
+
+        votePlayer: async (targetId) => {
+            const roomId = gameState.currentRoomId;
+            const myId = gameState.user.id;
+            
+            const myRef = ref(db, `rooms/${roomId}/players/${myId}`);
+            await update(myRef, { voteTarget: targetId });
+        },
+
+        endVoting: async () => {
+            const roomId = gameState.currentRoomId;
+            
+            onValue(ref(db, `rooms/${roomId}/players`), async (snapshot) => {
+                const players = snapshot.val();
+                if(!players) return;
+
+                const voteCounts = {};
+                let maxVotes = -1;
+                let eliminatedId = null;
+                let isTie = false;
+
+                Object.values(players).forEach(p => {
+                    if (p.status === 'alive' && p.voteTarget) {
+                        const target = p.voteTarget;
+                        voteCounts[target] = (voteCounts[target] || 0) + 1;
+                    }
+                });
+
+                Object.keys(voteCounts).forEach(pid => {
+                    const count = voteCounts[pid];
+                    if (count > maxVotes) {
+                        maxVotes = count;
+                        eliminatedId = pid;
+                        isTie = false;
+                    } else if (count === maxVotes) {
+                        isTie = true;
+                    }
+                });
+
+                let resultMessage = {};
+                let nextStatus = 'playing'; 
+                
+                if (maxVotes === -1 || isTie) {
+                    resultMessage = { name: isTie ? "平票" : "無人投票", role: "none", statusText: "無人出局，遊戲繼續", type: "continue" };
+                } else {
+                    const deadPlayer = players[eliminatedId];
+                    const deadRole = deadPlayer.role === 'spy' ? '臥底' : '平民';
+                    
+                    await update(ref(db, `rooms/${roomId}/players/${eliminatedId}`), { status: 'dead' });
+
+                    let spyCount = 0;
+                    let civCount = 0;
+                    Object.keys(players).forEach(pid => {
+                        let status = players[pid].status;
+                        if(pid === eliminatedId) status = 'dead'; 
+                        
+                        if(status === 'alive') {
+                            if (players[pid].role === 'spy') spyCount++;
+                            else civCount++;
+                        }
+                    });
+
+                    if (spyCount === 0) {
+                        resultMessage = { name: deadPlayer.name, role: deadRole, statusText: "🎉 平民獲勝！", type: "win" };
+                        nextStatus = 'waiting'; 
+                    } else if (spyCount >= civCount) {
+                        resultMessage = { name: deadPlayer.name, role: deadRole, statusText: "😈 臥底獲勝！", type: "win" };
+                        nextStatus = 'waiting'; 
+                    } else {
+                        resultMessage = { name: deadPlayer.name, role: deadRole, statusText: "遊戲繼續", type: "continue" };
+                        nextStatus = 'playing'; 
+                    }
+                }
+
+                resultMessage.nextGameStatus = nextStatus;
+
+                await update(ref(db, `rooms/${roomId}`), {
+                    status: 'revealing',
+                    result: resultMessage
+                });
+                
+                const updates = {};
+                Object.keys(players).forEach(pid => {
+                    updates[`players/${pid}/voteTarget`] = null;
+                });
+                await update(ref(db, `rooms/${roomId}`), updates);
+
+            }, { onlyOnce: true });
+        },
+
+        closeOverlay: () => {
+             document.getElementById('overlay-result').style.display = 'none';
+             if (gameState.isHost) {
+                 const roomId = gameState.currentRoomId;
+                 const statusText = document.getElementById('res-game-status').innerText;
+                 let nextState = 'playing';
+                 if (statusText.includes("獲勝")) nextState = 'waiting';
+                 update(ref(db, `rooms/${roomId}`), { status: nextState });
+             }
+        },
+
+        nextRound: () => window.app.startGame()
+    };
+
+    // --- UI 渲染邏輯 ---
+
+    function renderRoomList(rooms) {
+        const list = document.getElementById('room-list');
+        list.innerHTML = "";
+        if (!rooms) {
+            list.innerHTML = "<p style='text-align:center; color:#666'>目前沒有房間</p>";
+            return;
+        }
+
+        Object.keys(rooms).forEach(key => {
+            const room = rooms[key];
+            const pCount = room.players ? Object.keys(room.players).length : 0;
+            const statusMap = { 'waiting': '等待中', 'playing': '遊戲中', 'voting': '投票中', 'revealing': '揭曉中' };
+            const statusText = statusMap[room.status] || '進行中';
+
+            // --- 管理員：顯示刪除按鈕 ---
+            let adminControls = '';
+            if (gameState.isAdmin) {
+                adminControls = `<button class="admin-nuke-btn" onclick="app.adminForceDelete('${key}')">[X]</button>`;
+            }
+            // ------------------------
+
+            const div = document.createElement('div');
+            div.className = 'room-item';
+            div.innerHTML = `
+                <div>
+                    <strong style="color:var(--primary); font-size:18px;">${key}</strong> 
+                    <span style="font-size:12px; color:#888; margin-left:10px;">(${pCount}/${room.config.maxPlayers}人)</span>
+                    <br>
+                    <span class="tag ${room.status === 'playing' ? 'host' : ''}">${statusText}</span>
+                    ${adminControls}
+                </div>
+                <button style="width:auto; margin:0;" onclick="app.joinRoom('${key}')">加入</button>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    function enterRoom(roomId) {
+        window.app.switchScreen('screen-room');
+        document.getElementById('room-id-display').innerText = `房號: ${roomId}`;
+
+        onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
+            const roomData = snapshot.val();
+            if(!roomData) {
+                alert("房間已解散");
+                window.app.leaveRoom();
+                return;
+            }
+            updateRoomUI(roomData);
+        });
+    }
+
+    function updateRoomUI(roomData) {
+        const players = roomData.players || {};
+        const myId = gameState.user.id;
+        const me = players[myId];
+        
+        document.getElementById('player-count').innerText = Object.keys(players).length;
+        document.getElementById('max-player-count').innerText = roomData.config.maxPlayers;
+        document.getElementById('status-badge').innerText = 
+            roomData.status === 'voting' ? '投票中' : (roomData.status === 'waiting' ? '等待中' : '遊戲中');
+
+        if (roomData.status === 'processing' && gameState.isHost) {
+            assignRolesAndStart(roomData, Object.keys(players));
+            return;
+        }
+
+        if (roomData.status === 'revealing' && roomData.result) {
+            showResultOverlay(roomData.result);
+        } else {
+            document.getElementById('overlay-result').style.display = 'none';
+        }
+
+        const gameArea = document.getElementById('game-area');
+        const btnStart = document.getElementById('btn-start');
+        const btnRestart = document.getElementById('btn-restart');
+        const ingameControls = document.getElementById('ingame-controls');
+        const btnStartVote = document.getElementById('btn-start-vote');
+        const btnEndVote = document.getElementById('btn-end-vote');
+
+        if (roomData.status === 'waiting') {
+            gameArea.style.display = 'none';
+            btnStart.style.display = 'block';
+            ingameControls.style.display = 'none';
+            btnRestart.style.display = 'none';
+        } else {
+            gameArea.style.display = 'block';
+            btnStart.style.display = 'none';
+            
+            if (me && me.word) {
+                const w = document.getElementById('my-word');
+                w.innerText = gameState.wordVisible ? me.word : "已隱藏";
+            }
+
+            if (gameState.isHost) {
+                if (roomData.status === 'voting') {
+                    ingameControls.style.display = 'block';
+                    btnStartVote.style.display = 'none';
+                    btnEndVote.style.display = 'block';
+                    btnRestart.style.display = 'none';
+                } else if (roomData.status === 'playing') {
+                    ingameControls.style.display = 'block';
+                    btnStartVote.style.display = 'block';
+                    btnEndVote.style.display = 'none';
+                    btnRestart.style.display = 'none'; 
+                } else {
+                     ingameControls.style.display = 'none';
+                     btnRestart.style.display = 'none';
+                }
+            } else {
+                 ingameControls.style.display = 'none';
+                 btnRestart.style.display = 'none';
+            }
+        }
+
+        renderPlayerList(players, roomData.status, myId);
+        document.getElementById('host-controls').style.display = gameState.isHost ? 'block' : 'none';
+    }
+
+    function renderPlayerList(players, status, myId) {
+        const list = document.getElementById('player-list');
+        list.innerHTML = "";
+        
+        const voteCounts = {};
+        Object.values(players).forEach(p => {
+            if(p.voteTarget) voteCounts[p.voteTarget] = (voteCounts[p.voteTarget] || 0) + 1;
+        });
+
+        const me = players[myId];
+        const amIDead = me && me.status === 'dead';
+        const myTarget = me ? me.voteTarget : null;
+
+        Object.keys(players).forEach(pid => {
+            const p = players[pid];
+            const isMe = pid === myId;
+            const votes = voteCounts[pid] || 0;
+            
+            // --- 管理員：透視卡牌 ---
+            let secretReveal = '';
+            if (gameState.isAdmin && p.word && (status === 'playing' || status === 'voting' || status === 'revealing')) {
+                const color = p.role === 'spy' ? 'var(--danger)' : 'var(--success)';
+                const roleName = p.role === 'spy' ? '臥底' : '平民';
+                secretReveal = `<div class="admin-reveal" style="color:${color}">[${roleName}] ${p.word}</div>`;
+            }
+            // ---------------------
+
+            const div = document.createElement('div');
+            div.className = `player-card ${isMe ? 'is-me' : ''} ${p.status === 'dead' ? 'dead' : ''}`;
+            
+            let actionHtml = '';
+
+            if (status === 'voting' && p.status === 'alive') {
+                if (!amIDead && !myTarget && !isMe) {
+                    actionHtml = `<button class="vote-btn" onclick="app.votePlayer('${pid}')">投票</button>`;
+                } else if (myTarget === pid) {
+                    actionHtml = `<span class="tag vote-count">已投</span>`;
+                }
+            }
+
+            if (status === 'voting' || status === 'revealing') {
+                if (votes > 0) {
+                    actionHtml += `<span class="tag vote-count">${votes}票</span>`;
+                }
+            }
+
+            div.innerHTML = `
+                <div style="display:flex; align-items:center;">
+                    <div style="display:flex; flex-direction:column;">
+                        <div style="color:${p.status==='dead'?'#777':'inherit'}">
+                            <strong>${p.name}</strong>
+                            ${p.isHost ? '<span class="tag host">房主</span>' : ''}
+                            ${isMe ? '<span class="tag">我</span>' : ''}
+                        </div>
+                        ${p.status === 'dead' ? '<span style="font-size:10px; color:var(--danger);">(已出局)</span>' : ''}
+                        ${secretReveal}
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    ${actionHtml}
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    async function assignRolesAndStart(roomData, pIds) {
+        const spyCount = roomData.config.spyCount;
+        const total = pIds.length;
+        
+        let roles = Array(total).fill('civilian');
+        for(let i=0; i<spyCount; i++) roles[i] = 'spy';
+        
+        for (let i = total - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [roles[i], roles[j]] = [roles[j], roles[i]];
+        }
+
+        const updates = {};
+        pIds.forEach((pid, index) => {
+            const role = roles[index];
+            const word = role === 'spy' ? roomData.words.spy : roomData.words.civilian;
+            updates[`rooms/${gameState.currentRoomId}/players/${pid}/word`] = word;
+            updates[`rooms/${gameState.currentRoomId}/players/${pid}/role`] = role;
+            updates[`rooms/${gameState.currentRoomId}/players/${pid}/voteTarget`] = null; 
+            updates[`rooms/${gameState.currentRoomId}/players/${pid}/status`] = 'alive';
+        });
+        
+        updates[`rooms/${gameState.currentRoomId}/status`] = 'playing';
+        await update(ref(db), updates);
+    }
+
+    function showResultOverlay(result) {
+        const overlay = document.getElementById('overlay-result');
+        const nameEl = document.getElementById('res-name');
+        const roleEl = document.getElementById('res-role');
+        const roleTextEl = document.getElementById('res-role-text');
+        const statusEl = document.getElementById('res-game-status');
+
+        nameEl.innerText = result.name;
+        
+        if (result.role === 'spy') {
+            roleTextEl.innerText = "臥底 😈";
+            roleEl.className = "result-role spy";
+        } else if (result.role === 'civilian') {
+            roleTextEl.innerText = "平民 😇";
+            roleEl.className = "result-role civilian";
+        } else {
+            roleTextEl.innerText = "";
+            roleEl.className = "result-role";
+        }
+
+        statusEl.innerText = result.statusText;
+        if(result.type === 'win') {
+            statusEl.style.borderColor = '#f1c40f';
+            statusEl.style.color = '#f1c40f';
+        } else {
+            statusEl.style.borderColor = '#555';
+            statusEl.style.color = 'white';
+        }
+
+        overlay.style.display = 'flex';
+    }
+
+    document.getElementById('word-card').addEventListener('click', () => {
+        gameState.wordVisible = !gameState.wordVisible;
+        const w = document.getElementById('my-word');
+        if(!gameState.wordVisible) w.innerText = "已隱藏";
+        else w.innerText = "..."; 
+    });
+
+</script>
+</body>
+</html>

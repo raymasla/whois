@@ -641,14 +641,16 @@
                         }
                     });
 
+                    // 修正：將 role 屬性改為傳送原始代碼 (deadPlayer.role)，而不是中文的 deadRole
+                    // 這樣前端的 showResultOverlay 才能正確判斷 'spy' 或 'civilian'
                     if (spyCount === 0) {
-                        resultMessage = { name: deadPlayer.name, role: deadRole, statusText: "🎉 平民獲勝！", type: "win" };
+                        resultMessage = { name: deadPlayer.name, role: deadPlayer.role, statusText: "🎉 平民獲勝！", type: "win" };
                         nextStatus = 'waiting'; 
                     } else if (spyCount >= civCount) {
-                        resultMessage = { name: deadPlayer.name, role: deadRole, statusText: "😈 臥底獲勝！", type: "win" };
+                        resultMessage = { name: deadPlayer.name, role: deadPlayer.role, statusText: "😈 臥底獲勝！", type: "win" };
                         nextStatus = 'waiting'; 
                     } else {
-                        resultMessage = { name: deadPlayer.name, role: deadRole, statusText: "遊戲繼續", type: "continue" };
+                        resultMessage = { name: deadPlayer.name, role: deadPlayer.role, statusText: "遊戲繼續", type: "continue" };
                         nextStatus = 'playing'; 
                     }
                 }

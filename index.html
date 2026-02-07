@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>誰是臥底 - 簡易版</title>
+    <title>誰是臥底 簡易版</title>
     <style>
         :root {
             /* 暗黑模式配色變數 */
@@ -18,6 +18,7 @@
             --border: #333333;
             --input-bg: #2d2d2d;
             --hover: #2c3e50;
+            --chat-bg: #1a1a1a;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -37,6 +38,11 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
             position: relative;
             z-index: 1;
+            display: flex;
+            flex-direction: column;
+            /* 讓容器高度適應內容，但在聊天室很長時不超過視窗太多 */
+            max-height: 95vh;
+            overflow-y: auto; 
         }
         h1, h2, h3 { text-align: center; color: var(--text); margin-top: 0;}
         .screen { display: none; }
@@ -60,6 +66,7 @@
         button.danger { background: var(--danger); }
         button.secondary { background: #555; }
         button.success { background: var(--success); }
+        button.small-btn { width: auto; padding: 5px 10px; font-size: 14px; margin: 0; }
         
         input, select {
             width: 100%;
@@ -134,6 +141,25 @@
             border-radius: 20px;
         }
 
+        /* 自訂詞語區域 */
+        #custom-words-area {
+            display: none;
+            background: #252525;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px dashed #555;
+            margin-top: 10px;
+        }
+        .custom-word-item {
+            display: flex;
+            justify-content: space-between;
+            background: #333;
+            padding: 5px 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
         /* 遮罩層 (顯示結果用) */
         #overlay-result {
             display: none;
@@ -163,7 +189,6 @@
             background: #111;
         }
         
-        /* 隱藏的管理員按鈕樣式 */
         .admin-nuke-btn {
             background: transparent;
             border: 1px solid #555;
@@ -184,6 +209,32 @@
             border-radius: 3px;
             display: inline-block;
         }
+
+        /* 聊天室樣式 */
+        #chat-section {
+            margin-top: 20px;
+            border-top: 1px solid #333;
+            padding-top: 15px;
+            display: flex;
+            flex-direction: column;
+            height: 250px; /* 固定聊天室高度 */
+        }
+        #chat-messages {
+            flex: 1;
+            background: var(--chat-bg);
+            border-radius: 8px;
+            padding: 10px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            border: 1px solid #333;
+            font-size: 14px;
+        }
+        .chat-msg { margin-bottom: 6px; line-height: 1.4; word-break: break-all; }
+        .chat-sender { color: var(--primary); font-weight: bold; margin-right: 5px; }
+        .chat-input-wrapper { display: flex; gap: 8px; }
+        .chat-input-wrapper input { margin: 0; flex: 1; }
+        .chat-input-wrapper button { width: auto; margin: 0; padding: 0 20px; }
+
     </style>
 </head>
 <body>
@@ -203,7 +254,7 @@
 <div class="container">
     <div id="screen-login" class="screen active">
         <h1>🕵️ 誰是臥底</h1>
-        <p style="text-align:center; color:var(--text-muted);">暗黑版 - 請輸入暱稱</p>
+        <p style="text-align:center; color:var(--text-muted);">歡迎！ 請輸入暱稱</p>
         <input type="text" id="username" placeholder="你的暱稱">
         <button onclick="app.login()">進入大廳</button>
     </div>
@@ -220,6 +271,10 @@
 
     <div id="screen-create" class="screen">
         <h2>創建新房間</h2>
+        
+        <label>房間名稱</label>
+        <input type="text" id="room-name-input" placeholder="例如：可疑的房間" value="來當臥底囉">
+
         <label>玩家總人數 (3-10)</label>
         <select id="total-players">
             <option value="3">3人</option>
@@ -239,13 +294,35 @@
             <option value="3">3人</option>
         </select>
 
+        <div style="margin: 15px 0;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label style="margin:0;">詞語設定</label>
+                <button class="secondary small-btn" type="button" onclick="app.toggleCustomWords()">+ 自訂詞語</button>
+            </div>
+            
+            <div id="custom-words-area">
+                <p style="margin:0 0 10px 0; font-size:12px; color:#aaa;">輸入後點擊「新增」。若有新增，遊戲將只使用此列表。</p>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="custom-civ" placeholder="平民詞 (如: 蘋果)" style="margin:0;">
+                    <input type="text" id="custom-spy" placeholder="臥底詞 (如: 香蕉)" style="margin:0;">
+                </div>
+                <button type="button" class="success small-btn" style="width:100%; margin-top:5px;" onclick="app.addCustomWord()">新增詞組</button>
+                
+                <div id="custom-words-list" style="margin-top:10px; max-height:100px; overflow-y:auto;">
+                    </div>
+            </div>
+        </div>
+
         <button onclick="app.createRoom()">確認創建</button>
         <button class="secondary" onclick="app.switchScreen('screen-lobby')">取消</button>
     </div>
 
     <div id="screen-room" class="screen">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
-            <h2 id="room-id-display" style="margin:0; font-size: 18px;">房號: ----</h2>
+            <div style="display:flex; flex-direction:column;">
+                <strong id="room-name-display" style="font-size: 18px; color: var(--primary);">房間名稱</strong>
+                <span id="room-id-display" style="font-size: 12px; color: #888;">房號: ----</span>
+            </div>
             <button class="secondary" style="width:auto; padding:6px 12px; font-size:14px; margin:0;" onclick="app.leaveRoom()">
                 離開
             </button>
@@ -284,12 +361,22 @@
                 ⚠️ 解散房間
             </button>
         </div>
+
+        <div id="chat-section">
+            <div id="chat-messages">
+                <div style="color:#666; font-style:italic;">歡迎來到聊天室！</div>
+            </div>
+            <div class="chat-input-wrapper">
+                <input type="text" id="chat-input" placeholder="說點什麼..." autocomplete="off">
+                <button onclick="app.sendChat()" class="small-btn">發送</button>
+            </div>
+        </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getDatabase, ref, set, push, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+    import { getDatabase, ref, set, push, onValue, update, remove, onDisconnect, get, child, onChildAdded } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
     // --- 1. 配置與初始化 ---
     const firebaseConfig = {
@@ -306,145 +393,167 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // --- 2. 完整詞語庫 ---
+    // --- 2. 新詞語庫 (維持不變) ---
     const rawWords = `
-1. 洗衣粉——皂角粉
-2. 甄子丹——李連杰
-3. 魚香肉絲——四喜丸子
-4. 唇膏——口紅
-5. 紙巾——手帕
-6. 葡萄——提子
-7. 蝴蝶——蜜蜂
-8. 夏家三千金——愛情睡醒了
-9. 餃子——包子
-10. 包青天——狄仁傑
-11. 麻婆豆腐——皮蛋豆腐
-12. 鐵觀音——碧螺春
-13. 手機——平板
-14. 玫瑰——月季
-15. 情人節——光棍節
-16. 水盆——水桶
-17. 杭州——蘇州
-18. 被子——床單
-19. 雞蛋——鴨蛋
-20. 綠茶——苦茶
-21. 白菜——生菜
-22. 美人心計——傾世皇妃
-23. 童話——神話
-24. 金庸——古龍
-25. 降龍十八掌——九陰白骨爪
-26. 雙胞胎——龍鳳胎
-27. 魔術師——魔法師
-28. 餅乾——薯片
-29. 金絲猴——大白兔(奶糖)
-30. 兩小無猜——青梅竹馬
-31. 烤肉——涮肉
-32. 獎牌——金牌
-33. 十面埋伏——四面楚歌
-34. 男朋友——前男友
-35. 語無倫次——詞不達意
-36. 過山車——碰碰車
-37. 流星花園——花樣男子
-38. 鼠目寸光——井底之蛙
-39. 乾洗機——甩乾機
-40. 謝娜——李湘
-41. 成吉思汗——努爾哈赤
-42. 新年——跨年
-43. 小品——話劇
-44. 麥克風——擴音器
-45. 卷髮——直髮
-46. 作文——論文
-47. 反彈琵琶——亂彈棉花
-48. 洗髮露——護髮素
-49. 謝娜張傑——鄧超孫儷
-50. 太監——人妖
-51. 果粒橙——鮮橙多
-52. 玻璃——鏡子
-53. 豆漿——牛奶
-54. 王菲——那英
-55. 貴妃醉酒——黛玉葬花
-56. 警察——捕快
-57. 泡泡糖——棒棒糖
-58. 宮鎖心玉——宮鎖珠簾
-59. 紅燒牛肉麵——香辣牛肉麵
-60. 婚紗——喜服
-61. 作家——編劇
-62. 小籠包——灌湯包
-63. 結婚——訂婚
-64. 那英——韓紅
-65. 富二代——高富帥
-66. 湯圓——丸子
-67. 甄嬛傳——紅樓夢
-68. 郭德綱——周立波
-69. 菠蘿蜜——榴槤
-70. 牛肉乾——豬肉脯
-71. 剩女——御姐
-72. 梁山伯與祝英台——羅密歐與朱麗葉
-73. 圖書館——圖書店
-74. 張韶涵——王心凌
-75. 薰衣草——滿天星
-76. 氣泡——水泡
-77. 首爾——東京
-78. 公交——地鐵
-79. 劉詩詩——劉亦菲
-80. 哈密瓜——西瓜
-81. 臉盆——水桶
-82. 面包——蛋糕
-83. 丑小鴨——灰姑娘
-84. 紙巾——濕巾
-85. 生活費——零花錢
-86. 勇往直前——全力以赴
-87. 福爾摩斯——工藤新一
-88. 孟非——樂嘉
-89. 飯桶——飯碗
-90. 壁紙——貼畫
-91. 小沈陽——宋小寶
-92. 董永——許仙
-93. 動物——植物
-94. 土豆粉——酸辣粉
-95. 蜘蛛俠——蝙蝠俠
-96. 胡子——眉毛
-97. 盒子——箱子
-98. 天天向上——非誠勿擾
-99. 海豚——海獅
-100. 何炅——維嘉
-101. 近視眼鏡——隱形眼鏡
-102. 老佛爺——老天爺
-103. 森馬——以純
-104. 太陽傘——雨傘
-105. 吉他——琵琶
-106. 神鵰俠侶——天龍八部
-107. 風扇——空調
-108. 班主任——輔導員
-109. 鴨舌帽——遮陽帽
-110. 若曦——晴川
-111. 保安——保鏢
-112. 電腦——iPad
-113. 漢堡包——肉夾饃
-114. 媽媽——娘
-115. 同學——同桌
-116. 端午節——中秋節
-117. 蝴蝶——飛蛾
-118. 油條——麻花
-119. 高跟鞋——增高鞋
-120. 橙子——橘子
-121. 晨光——真彩
-122. 酸菜魚——水煮魚
-123. 枕頭——抱枕
-124. 胖子——肥肉
-125. 辣椒——芥末
-126. 龍鳳呈祥——鴛鴦戲水
-127. 沐浴露——沐浴鹽
-128. 樓梯——電梯
-129. 冠軍——第一
-130. 北魏——南朝
+星星——太陽
+鋼筆——毛筆
+鐵道——軌道
+月光——星光
+螞蟻——蜜蜂
+火車——地鐵
+草莓——藍莓
+戰鬥機——坦克
+直升機——飛機
+國中——高中
+國小——幼稚園
+今天——明天
+昨天——前天
+海豚——鯨魚
+海盜船——雲霄飛車
+太陽能——風能
+塑膠——玻璃
+高畫質——藍光
+沙漠——森林
+泰迪熊——熊貓
+蚊子——蒼蠅
+信封——郵票
+燒烤——烤串
+棉花糖——巧克力
+薯條——薯片
+口紅——唇膏
+葡萄——葡萄汁
+麥當勞——肯德基
+衛星——月亮
+電梯——扶梯
+綠茶——紅茶
+長頸鹿——斑馬
+壁紙——牆畫
+手套——襪子
+甘蔗——竹子
+冰淇淋——棒冰
+火箭——飛彈
+袋鼠——熊貓
+地球——火星
+鋼琴——小提琴
+手機——電腦
+紙巾——面紙
+黑板——白板
+蜘蛛網——漁網
+宇宙——銀河
+心跳——脈搏
+漫畫——動畫
+童話——寓言
+蝸牛——烏龜
+海浪——海嘯
+玄武岩——安山岩
+花崗岩——花崗片麻岩
+指甲刀——剪刀
+背包——手提包
+手錶——時鐘
+手電筒——燈籠
+雪橇——滑板
+公雞——母雞
+奶茶——冷飲
+咖啡——可可
+鋼琴——鍵盤
+拖鞋——涼鞋
+演唱會——音樂會
+電影——電視劇
+橙子——檸檬
+餅乾——糖果
+竹筏——木筏
+貓眼——紐扣
+酒店——客棧
+學生——學徒
+噴泉——瀑布
+金屬——合金
+衝浪——滑雪
+盆栽——花束
+鞋帶——腰帶
+棉被——羽絨被
+氣球——泡泡
+汽車——摩托車
+坐墊——靠墊
+尿尿——大便
+蠟燭——螢火
+字典——百科全書
+手電筒——檯燈
+平底鍋——電飯鍋
+日記——日程表
+傳真——電報
+寫信——網路
+微波爐——烤箱
+機器人——克隆
+海灘——沙灘
+火山——地震
+詞典——詞條
+創可貼——繃帶
+收音機——音響
+咖哩——辣椒
+珍珠——寶石
+扳手——螺絲起子
+弓箭——長矛
+黑棋——白棋
+松樹——柏樹
+螳螂——蟬
+火腿——香腸
+手機——平板
+呼啦圈——跳繩
+天文望遠鏡——顯微鏡
+彩虹——極光
+油畫——素描
+蚊子——蒼蠅
+河豚——金魚
+黑糖——白糖
+晚禮服——小禮服
+漢堡皮——漢堡內線
+枕頭——棉被
+手套——襪子
+寒假——暑假
+奶茶——咖啡
+葡萄——蘋果
+橘子——橙子
+運動鞋——皮鞋
+唇膏——口紅
+牛奶——豆漿
+鍵盤——滑鼠
+圍巾——領帶
+肥皂——香皂
+游泳——跳水
+警察——警衛
+老師——同學
+麵包——蛋糕
+自信——自戀
+旅遊——流浪
+紙巾——手帕
+雨傘——陽傘
+玫瑰——月季
+蝴蝶——蜜蜂
+手機——平板
+鋼琴——手風琴
+蘋果——梨子
+跑步——競走
+閃婚——裸婚
+牛肉乾——豬肉脯
+肯德基——麥當勞
+班主任——輔導員
+眉毛——睫毛
+腳踏車——摩托車
+電扶梯——樓梯
+烤肉——火鍋
+襯衫——T恤
+電影——電視劇
+森林——公園
+太陽——月亮
+帆布鞋——高跟鞋
     `;
 
+    // 解析新格式 (WordA——WordB)
     const wordPairs = rawWords.trim().split('\n').map(line => {
-        const parts = line.split(/[.——]+/);
-        if(parts.length >= 3) return [parts[1].trim(), parts[2].trim()];
+        const parts = line.split(/——/);
+        if(parts.length >= 2) return [parts[0].trim(), parts[1].trim()];
         return null;
-    }).filter(p => p !== null);
+    }).filter(p => p !== null && p[0] && p[1]);
 
     // --- 3. 遊戲邏輯與全域變數 ---
     window.gameState = {
@@ -453,7 +562,9 @@
         isHost: false,
         wordVisible: true,
         localVoteTarget: null,
-        isAdmin: false // 新增：預設非管理員
+        isAdmin: false,
+        tempCustomWords: [], // 暫存自訂詞語
+        chatListener: null // 用於儲存聊天室監聽器引用
     };
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -464,11 +575,9 @@
             if (!name) return alert("請輸入暱稱！");
             gameState.user.name = name;
             
-            // --- 隱藏功能觸發點 ---
             if (name === "araygame") {
                 gameState.isAdmin = true;
             }
-            // ---------------------
 
             gameState.user.id = generateId();
             
@@ -487,11 +596,44 @@
             document.getElementById(screenId).classList.add('active');
         },
 
-        showCreateRoom: () => window.app.switchScreen('screen-create'),
+        showCreateRoom: () => {
+            // 重置自訂詞語與房間名稱
+            gameState.tempCustomWords = [];
+            document.getElementById('custom-words-list').innerHTML = '';
+            document.getElementById('custom-words-area').style.display = 'none';
+            document.getElementById('custom-civ').value = '';
+            document.getElementById('custom-spy').value = '';
+            document.getElementById('room-name-input').value = "來當臥底囉"; // 重置預設名稱
+            window.app.switchScreen('screen-create');
+        },
+
+        toggleCustomWords: () => {
+            const area = document.getElementById('custom-words-area');
+            area.style.display = area.style.display === 'none' ? 'block' : 'none';
+        },
+
+        addCustomWord: () => {
+            const civ = document.getElementById('custom-civ').value.trim();
+            const spy = document.getElementById('custom-spy').value.trim();
+            
+            if (!civ || !spy) return alert("請輸入完整的平民詞和臥底詞");
+            
+            gameState.tempCustomWords.push([civ, spy]);
+            
+            // 更新 UI
+            const div = document.createElement('div');
+            div.className = 'custom-word-item';
+            div.innerHTML = `<span>${civ} —— ${spy}</span>`;
+            document.getElementById('custom-words-list').appendChild(div);
+            
+            document.getElementById('custom-civ').value = '';
+            document.getElementById('custom-spy').value = '';
+        },
 
         createRoom: async () => {
             const maxPlayers = parseInt(document.getElementById('total-players').value);
             const spyCount = parseInt(document.getElementById('spy-count').value);
+            const roomName = document.getElementById('room-name-input').value.trim() || "未命名房間"; // 獲取房間名稱
             
             if (spyCount >= maxPlayers) return alert("臥底人數不能大於或等於總人數！");
 
@@ -501,7 +643,12 @@
 
             const roomRef = ref(db, 'rooms/' + roomId);
             await set(roomRef, {
-                config: { maxPlayers, spyCount },
+                config: { 
+                    roomName, // 儲存房間名稱
+                    maxPlayers, 
+                    spyCount,
+                    customWords: gameState.tempCustomWords 
+                },
                 status: 'waiting', 
                 players: {
                     [gameState.user.id]: {
@@ -526,12 +673,10 @@
              window.app.leaveRoom();
         },
 
-        // --- 新增：管理員專用強制刪除 ---
         adminForceDelete: async (targetRoomId) => {
             if(!confirm(`[管理員] 確定強制解散房間 ${targetRoomId}？`)) return;
             await remove(ref(db, `rooms/${targetRoomId}`));
         },
-        // -----------------------------
 
         joinRoom: async (roomId) => {
             const roomRef = ref(db, `rooms/${roomId}`);
@@ -558,12 +703,53 @@
             }
             gameState.currentRoomId = null;
             gameState.isHost = false;
+            
+            // 清除聊天監聽器 (雖然切換畫面會重新綁定，但養成好習慣)
+            if (gameState.chatListener) {
+                // Firebase v9 的 off 比較複雜，這邊依賴切換頁面重置
+                gameState.chatListener = null;
+            }
+
             window.app.switchScreen('screen-lobby');
+        },
+
+        // --- 聊天室功能 ---
+        sendChat: () => {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const roomId = gameState.currentRoomId;
+            const messagesRef = ref(db, `rooms/${roomId}/messages`);
+            
+            push(messagesRef, {
+                sender: gameState.user.name,
+                text: text,
+                timestamp: Date.now()
+            });
+            
+            input.value = '';
         },
 
         startGame: async () => {
             const roomId = gameState.currentRoomId;
-            const pair = wordPairs[Math.floor(Math.random() * wordPairs.length)];
+            
+            const roomSnapshot = await get(child(ref(db), `rooms/${roomId}`));
+            const roomData = roomSnapshot.val();
+            
+            let currentPool = wordPairs; 
+            
+            if (roomData.config && roomData.config.customWords && roomData.config.customWords.length > 0) {
+                currentPool = roomData.config.customWords;
+            }
+
+            const pair = currentPool[Math.floor(Math.random() * currentPool.length)];
+            
+            if (!pair) {
+                alert("詞庫發生錯誤，請重試");
+                return;
+            }
+
             const flip = Math.random() > 0.5;
             const civilianWord = flip ? pair[0] : pair[1];
             const spyWord = flip ? pair[1] : pair[0];
@@ -641,8 +827,6 @@
                         }
                     });
 
-                    // 修正：將 role 屬性改為傳送原始代碼 (deadPlayer.role)，而不是中文的 deadRole
-                    // 這樣前端的 showResultOverlay 才能正確判斷 'spy' 或 'civilian'
                     if (spyCount === 0) {
                         resultMessage = { name: deadPlayer.name, role: deadPlayer.role, statusText: "🎉 平民獲勝！", type: "win" };
                         nextStatus = 'waiting'; 
@@ -700,20 +884,19 @@
             const pCount = room.players ? Object.keys(room.players).length : 0;
             const statusMap = { 'waiting': '等待中', 'playing': '遊戲中', 'voting': '投票中', 'revealing': '揭曉中' };
             const statusText = statusMap[room.status] || '進行中';
+            const roomName = (room.config && room.config.roomName) ? room.config.roomName : `房間 ${key}`;
 
-            // --- 管理員：顯示刪除按鈕 ---
             let adminControls = '';
             if (gameState.isAdmin) {
                 adminControls = `<button class="admin-nuke-btn" onclick="app.adminForceDelete('${key}')">[X]</button>`;
             }
-            // ------------------------
 
             const div = document.createElement('div');
             div.className = 'room-item';
             div.innerHTML = `
                 <div>
-                    <strong style="color:var(--primary); font-size:18px;">${key}</strong> 
-                    <span style="font-size:12px; color:#888; margin-left:10px;">(${pCount}/${room.config.maxPlayers}人)</span>
+                    <strong style="color:var(--primary); font-size:18px;">${roomName}</strong> 
+                    <span style="font-size:12px; color:#888; margin-left:10px;">ID:${key} (${pCount}/${room.config.maxPlayers}人)</span>
                     <br>
                     <span class="tag ${room.status === 'playing' ? 'host' : ''}">${statusText}</span>
                     ${adminControls}
@@ -726,8 +909,15 @@
 
     function enterRoom(roomId) {
         window.app.switchScreen('screen-room');
+        // 先顯示 ID，稍後從數據庫獲取名稱
         document.getElementById('room-id-display').innerText = `房號: ${roomId}`;
+        document.getElementById('room-name-display').innerText = "載入中...";
 
+        // 清空並初始化聊天室
+        const chatContainer = document.getElementById('chat-messages');
+        chatContainer.innerHTML = '<div style="color:#666; font-style:italic; margin-bottom:5px;">-- 聊天室已連接 --</div>';
+
+        // 監聽房間數據 (遊戲狀態、玩家列表)
         onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
             const roomData = snapshot.val();
             if(!roomData) {
@@ -737,6 +927,29 @@
             }
             updateRoomUI(roomData);
         });
+
+        // 獨立監聽聊天訊息 (使用 onChildAdded 以避免重繪整個 UI)
+        const messagesRef = ref(db, `rooms/${roomId}/messages`);
+        onChildAdded(messagesRef, (data) => {
+            const msg = data.val();
+            renderChatMessage(msg);
+        });
+        
+        // 綁定 Enter 發送
+        const chatInput = document.getElementById('chat-input');
+        chatInput.onkeypress = (e) => {
+            if(e.key === 'Enter') window.app.sendChat();
+        };
+    }
+
+    function renderChatMessage(msg) {
+        const container = document.getElementById('chat-messages');
+        const div = document.createElement('div');
+        div.className = 'chat-msg';
+        div.innerHTML = `<span class="chat-sender">${msg.sender}:</span>${msg.text}`;
+        container.appendChild(div);
+        // 自動捲動到底部
+        container.scrollTop = container.scrollHeight;
     }
 
     function updateRoomUI(roomData) {
@@ -744,6 +957,11 @@
         const myId = gameState.user.id;
         const me = players[myId];
         
+        // 更新標題顯示房間名稱
+        if (roomData.config && roomData.config.roomName) {
+            document.getElementById('room-name-display').innerText = roomData.config.roomName;
+        }
+
         document.getElementById('player-count').innerText = Object.keys(players).length;
         document.getElementById('max-player-count').innerText = roomData.config.maxPlayers;
         document.getElementById('status-badge').innerText = 
@@ -824,14 +1042,15 @@
             const isMe = pid === myId;
             const votes = voteCounts[pid] || 0;
             
-            // --- 管理員：透視卡牌 ---
+            // --- 管理員：透視 ---
             let secretReveal = '';
             if (gameState.isAdmin && p.word && (status === 'playing' || status === 'voting' || status === 'revealing')) {
                 const color = p.role === 'spy' ? 'var(--danger)' : 'var(--success)';
                 const roleName = p.role === 'spy' ? '臥底' : '平民';
                 secretReveal = `<div class="admin-reveal" style="color:${color}">[${roleName}] ${p.word}</div>`;
             }
-            // ---------------------
+
+            const showHostBadge = p.isHost && (isMe || status === 'waiting');
 
             const div = document.createElement('div');
             div.className = `player-card ${isMe ? 'is-me' : ''} ${p.status === 'dead' ? 'dead' : ''}`;
@@ -857,7 +1076,7 @@
                     <div style="display:flex; flex-direction:column;">
                         <div style="color:${p.status==='dead'?'#777':'inherit'}">
                             <strong>${p.name}</strong>
-                            ${p.isHost ? '<span class="tag host">房主</span>' : ''}
+                            ${showHostBadge ? '<span class="tag host">房主</span>' : ''}
                             ${isMe ? '<span class="tag">我</span>' : ''}
                         </div>
                         ${p.status === 'dead' ? '<span style="font-size:10px; color:var(--danger);">(已出局)</span>' : ''}

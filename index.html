@@ -200,14 +200,18 @@
             border-radius: 4px;
         }
         .admin-nuke-btn:hover { background: var(--danger); color: white; border-color: var(--danger); }
-        .admin-reveal {
-            font-size: 11px;
+        
+        /* 揭曉身分 / 管理員透視的標籤樣式 */
+        .identity-reveal {
+            font-size: 12px;
             font-family: monospace;
-            margin-top: 2px;
+            margin-top: 4px;
             background: #000;
-            padding: 2px 4px;
-            border-radius: 3px;
-            display: inline-block;
+            padding: 3px 6px;
+            border-radius: 4px;
+            display: table; /* 讓它獨立一行且長度自適應 */
+            border-width: 1px;
+            border-style: solid;
         }
 
         /* 聊天室樣式 */
@@ -861,6 +865,7 @@
                  const roomId = gameState.currentRoomId;
                  const statusText = document.getElementById('res-game-status').innerText;
                  let nextState = 'playing';
+                 // 注意：這裡的判斷要小心，如果有改過 UI 文字
                  if (statusText.includes("獲勝")) nextState = 'waiting';
                  update(ref(db, `rooms/${roomId}`), { status: nextState });
              }
@@ -1042,12 +1047,34 @@
             const isMe = pid === myId;
             const votes = voteCounts[pid] || 0;
             
-            // --- 管理員：透視 ---
+            // --- 身份揭曉邏輯 (Admin透視 + 結算公開) ---
+            // 邏輯說明：
+            // 1. 管理員在遊戲中(playing/voting/revealing)可透視
+            // 2. 所有玩家在「等待中(waiting)」階段，如果玩家身上有上一局的詞(word)和身分(role)，則公開顯示。
+            //    當新遊戲開始時，系統會重置資料，此處就會自動隱藏。
+            
             let secretReveal = '';
-            if (gameState.isAdmin && p.word && (status === 'playing' || status === 'voting' || status === 'revealing')) {
-                const color = p.role === 'spy' ? 'var(--danger)' : 'var(--success)';
-                const roleName = p.role === 'spy' ? '臥底' : '平民';
-                secretReveal = `<div class="admin-reveal" style="color:${color}">[${roleName}] ${p.word}</div>`;
+            
+            const hasData = p.word && p.role;
+            const isGameRunning = ['playing', 'voting', 'revealing'].includes(status);
+            const isGameWaiting = status === 'waiting';
+            
+            let showIdentity = false;
+            
+            // 條件1: 管理員透視
+            if (gameState.isAdmin && isGameRunning && hasData) showIdentity = true;
+            
+            // 條件2: 結算公開 (平民/臥底獲勝後回到大廳等待時)
+            if (isGameWaiting && hasData) showIdentity = true;
+
+            if (showIdentity) {
+                const isSpy = p.role === 'spy';
+                const color = isSpy ? 'var(--danger)' : 'var(--success)';
+                const roleName = isSpy ? '臥底' : '平民';
+                
+                secretReveal = `<div class="identity-reveal" style="color:${color}; border-color:${color};">
+                    [${roleName}] ${p.word}
+                </div>`;
             }
 
             const showHostBadge = p.isHost && (isMe || status === 'waiting');

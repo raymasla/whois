@@ -131,6 +131,8 @@
         }
         .tag.host { background: #f39c12; color: #000; }
         .tag.vote-count { background: var(--danger); color: white; font-weight: bold; }
+        /* 分數標籤樣式 */
+        .tag.score { background: #67bad6; color: white; font-weight: bold; border: 1px solid #1a9bc7; }
 
         .vote-btn {
             background: var(--danger);
@@ -399,6 +401,15 @@
 
     // --- 2. 新詞語庫 (已替換) ---
     const rawWords = `
+守歲——熬夜
+打麻將——玩撲克牌
+要紅包——找人討債
+鞭炮——煙火
+水餃——混沌
+紅包——錢包
+10$——十萬$
+電話亭——電競手機
+行動充電器——插座
 星星——太陽
 鋼筆——毛筆
 鐵道——軌道
@@ -829,7 +840,7 @@
 英雄——超人
 外星人——機械人
 殭屍——吸血鬼
-巫師——占卜師
+巫師——老師
 天使——精靈
 畫家——雕塑家
 作家——詩人
@@ -971,7 +982,7 @@
 麥當勞——肯德基
 可口可樂——百事可樂
 星巴克——路易莎
-蘋果📱——三星📱
+蘋果(品牌)——三星(品牌)
 迪士尼——環球影城
 全家——7-11
 蝦皮——淘寶
@@ -1010,15 +1021,6 @@ Facebook——Instagram
 給老師的信——情書
 死亡筆記本——日記
 要紅包——搶劫
-守歲——熬夜
-打麻將——玩撲克牌
-要紅包——找人討債
-鞭炮——煙火
-水餃——混沌
-紅包——錢包
-10$——十萬$
-電話亭——電競手機
-行動充電器——插座
 在床上睡覺——上課偷睡覺
     `;
 
@@ -1130,6 +1132,7 @@ Facebook——Instagram
                         isHost: true,
                         status: 'alive',
                         votes: 0,
+                        score: 0, // 初始化分數
                         voteTarget: null
                     }
                 },
@@ -1163,6 +1166,7 @@ Facebook——Instagram
                 isHost: false,
                 status: 'alive',
                 votes: 0,
+                score: 0, // 初始化分數
                 voteTarget: null
             });
             
@@ -1281,13 +1285,16 @@ Facebook——Instagram
                 let resultMessage = {};
                 let nextStatus = 'playing'; 
                 
+                // 用來計算分數的 updates
+                const updates = {};
+
                 if (maxVotes === -1 || isTie) {
                     resultMessage = { name: isTie ? "平票" : "無人投票", role: "none", statusText: "無人出局，遊戲繼續", type: "continue" };
                 } else {
                     const deadPlayer = players[eliminatedId];
                     const deadRole = deadPlayer.role === 'spy' ? '臥底' : '平民';
                     
-                    await update(ref(db, `rooms/${roomId}/players/${eliminatedId}`), { status: 'dead' });
+                    updates[`players/${eliminatedId}/status`] = 'dead';
 
                     let spyCount = 0;
                     let civCount = 0;
@@ -1301,16 +1308,49 @@ Facebook——Instagram
                         }
                     });
 
+                    let winningTeam = null; // 'spy' or 'civilian' or null
+
                     if (spyCount === 0) {
                         resultMessage = { name: deadPlayer.name, role: deadPlayer.role, statusText: "🎉 平民獲勝！", type: "win" };
                         nextStatus = 'waiting'; 
+                        winningTeam = 'civilian';
                     } else if (spyCount >= civCount) {
                         resultMessage = { name: deadPlayer.name, role: deadPlayer.role, statusText: "😈 臥底獲勝！", type: "win" };
                         nextStatus = 'waiting'; 
+                        winningTeam = 'spy';
                     } else {
                         resultMessage = { name: deadPlayer.name, role: deadPlayer.role, statusText: "遊戲繼續", type: "continue" };
                         nextStatus = 'playing'; 
                     }
+
+                    // --- 分數計算邏輯 ---
+                    if (winningTeam) {
+                        Object.keys(players).forEach(pid => {
+                            const p = players[pid];
+                            // 獲取當前分數，預設為0
+                            let currentScore = p.score || 0;
+                            let addedScore = 0;
+                            
+                            // 判斷該玩家此時此刻的狀態 (包含剛剛被票出的那位)
+                            let pStatus = p.status;
+                            if (pid === eliminatedId) pStatus = 'dead';
+
+                            if (winningTeam === 'spy' && p.role === 'spy') {
+                                // 臥底獲勝，所有臥底(不論死活) +20
+                                addedScore = 20;
+                            } else if (winningTeam === 'civilian' && p.role === 'civilian') {
+                                // 平民獲勝，只有"活著"的平民 +10
+                                if (pStatus === 'alive') {
+                                    addedScore = 10;
+                                }
+                            }
+
+                            if (addedScore > 0) {
+                                updates[`players/${pid}/score`] = currentScore + addedScore;
+                            }
+                        });
+                    }
+                    // -------------------
                 }
 
                 resultMessage.nextGameStatus = nextStatus;
@@ -1320,10 +1360,12 @@ Facebook——Instagram
                     result: resultMessage
                 });
                 
-                const updates = {};
+                // 清空投票目標
                 Object.keys(players).forEach(pid => {
                     updates[`players/${pid}/voteTarget`] = null;
                 });
+                
+                // 一次性更新所有狀態 (包含玩家生死、分數、重置投票)
                 await update(ref(db, `rooms/${roomId}`), updates);
 
             }, { onlyOnce: true });
@@ -1516,12 +1558,9 @@ Facebook——Instagram
             const p = players[pid];
             const isMe = pid === myId;
             const votes = voteCounts[pid] || 0;
+            const score = p.score || 0; // 獲取分數
             
             // --- 身份揭曉邏輯 (Admin透視 + 結算公開) ---
-            // 邏輯說明：
-            // 1. 管理員在遊戲中(playing/voting/revealing)可透視
-            // 2. 所有玩家在「等待中(waiting)」階段，如果玩家身上有上一局的詞(word)和身分(role)，則公開顯示。
-            //    當新遊戲開始時，系統會重置資料，此處就會自動隱藏。
             
             let secretReveal = '';
             
@@ -1548,6 +1587,12 @@ Facebook——Instagram
             }
 
             const showHostBadge = p.isHost && (isMe || status === 'waiting');
+            
+            // --- 分數顯示邏輯 (僅在 waiting 或大廳階段顯示) ---
+            let scoreHtml = '';
+            if (status === 'waiting') {
+                scoreHtml = `<span class="tag score">score:${score}</span>`;
+            }
 
             const div = document.createElement('div');
             div.className = `player-card ${isMe ? 'is-me' : ''} ${p.status === 'dead' ? 'dead' : ''}`;
@@ -1575,6 +1620,7 @@ Facebook——Instagram
                             <strong>${p.name}</strong>
                             ${showHostBadge ? '<span class="tag host">房主</span>' : ''}
                             ${isMe ? '<span class="tag">我</span>' : ''}
+                            ${scoreHtml}
                         </div>
                         ${p.status === 'dead' ? '<span style="font-size:10px; color:var(--danger);">(已出局)</span>' : ''}
                         ${secretReveal}

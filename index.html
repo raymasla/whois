@@ -3,171 +3,317 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>誰是臥底 簡易版</title>
+    <title>誰是臥底</title>
     <style>
         :root {
-            /* 暗黑模式配色變數 */
-            --primary: #3498db;
-            --danger: #e74c3c;
-            --success: #2ecc71;
-            --warning: #f1c40f;
-            --bg: #121212;        /* 深色背景 */
-            --card: #1e1e1e;      /* 卡片背景 */
-            --text: #e0e0e0;      /* 主要文字 */
-            --text-muted: #a0a0a0;
-            --border: #333333;
-            --input-bg: #2d2d2d;
-            --hover: #2c3e50;
-            --chat-bg: #1a1a1a;
+            /* 配色升級：現代簡約深色風格 (Modern Dark Premium) */
+            /* 去除霓虹感，改用沈穩的靛藍、祖母綠、磚紅 */
+            --primary: #4f46e5;       /* Indigo */
+            --primary-hover: #4338ca;
+            --danger: #e11d48;        /* Rose */
+            --success: #059669;       /* Emerald */
+            --warning: #d97706;       /* Amber */
+            
+            /* 背景漸層：深岩灰至午夜藍 */
+            --bg-grad-1: #0f172a;     /* Slate 900 */
+            --bg-grad-2: #1e293b;     /* Slate 800 */
+            --bg-grad-3: #172554;     /* Blue 950 */
+            
+            /* 玻璃擬態變數 */
+            --glass-bg: rgba(30, 41, 59, 0.7); /* 更不透明一點，提升質感 */
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+            
+            --text: #f8fafc;          /* Slate 50 */
+            --text-muted: #94a3b8;    /* Slate 400 */
+            
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --input-bg: rgba(15, 23, 42, 0.6);
         }
+
+        /* 保留原本流暢的動畫 Keyframes */
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.9); }
+            60% { transform: scale(1.02); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* 修改後的呼吸燈：不再是強光，而是柔和的陰影縮放 */
+        @keyframes subtle-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.01); }
+            100% { transform: scale(1); }
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-grad-1), var(--bg-grad-2), var(--bg-grad-3));
+            background-size: 200% 200%;
+            animation: gradientBG 20s ease infinite;
             color: var(--text);
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
+
+        /* 滾動條美化 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
         .container {
             width: 100%;
             max-width: 500px;
-            background: var(--card);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: var(--glass-shadow);
             position: relative;
             z-index: 1;
             display: flex;
             flex-direction: column;
-            /* 讓容器高度適應內容，但在聊天室很長時不超過視窗太多 */
-            max-height: 95vh;
-            overflow-y: auto; 
+            max-height: 92vh;
+            overflow-y: auto;
+            transition: height 0.3s ease;
         }
-        h1, h2, h3 { text-align: center; color: var(--text); margin-top: 0;}
-        .screen { display: none; }
-        .active { display: block; }
+
+        h1, h2, h3 { 
+            text-align: center; 
+            color: var(--text); 
+            margin-top: 0; 
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
         
+        h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+
+        .screen { display: none; }
+        .screen.active { 
+            display: block; 
+            animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        /* 按鈕樣式：去除光暈，改為質感漸層 */
         button {
             width: 100%;
             padding: 14px;
             background: var(--primary);
             color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            font-size: 15px;
             cursor: pointer;
-            margin-top: 10px;
-            transition: 0.2s;
-            font-weight: bold;
+            margin-top: 12px;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-        button:hover { filter: brightness(1.1); }
-        button:disabled { background: #555; cursor: not-allowed; color: #888; }
-        button.danger { background: var(--danger); }
-        button.secondary { background: #555; }
-        button.success { background: var(--success); }
-        button.small-btn { width: auto; padding: 5px 10px; font-size: 14px; margin: 0; }
+
+        button:hover { 
+            background: var(--primary-hover);
+            transform: translateY(-1px); 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
         
+        button:active { transform: translateY(0); opacity: 0.9; }
+        button:disabled { background: #334155; cursor: not-allowed; color: #64748b; border-color: transparent; box-shadow: none; }
+        
+        button.danger { background: var(--danger); }
+        button.danger:hover { background: #be123c; }
+        
+        button.secondary { background: #334155; color: #e2e8f0; }
+        button.secondary:hover { background: #475569; }
+        
+        button.success { background: var(--success); }
+        button.success:hover { background: #047857; }
+        
+        button.small-btn { width: auto; padding: 8px 16px; font-size: 13px; margin: 0; border-radius: 8px; }
+        
+        /* 輸入框樣式：更平整 */
         input, select {
             width: 100%;
-            padding: 12px;
-            margin: 8px 0;
+            padding: 14px;
+            margin: 10px 0;
             background: var(--input-bg);
-            border: 1px solid var(--border);
+            border: 1px solid var(--glass-border);
             color: var(--text);
-            border-radius: 8px;
+            border-radius: 12px;
             box-sizing: border-box;
             font-size: 16px;
+            transition: 0.2s;
         }
-        input:focus, select:focus { border-color: var(--primary); outline: none; }
+        input:focus, select:focus { 
+            border-color: var(--primary); 
+            outline: none; 
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); /* 柔和的 focus ring */
+        }
+        input::placeholder { color: #475569; }
 
-        .room-item {
-            background: #252525;
-            border: 1px solid var(--border);
-            padding: 15px;
+        /* 列表項目 */
+        .room-item, .player-card {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            padding: 16px;
             margin-bottom: 10px;
-            border-radius: 8px;
+            border-radius: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: background 0.2s;
+        }
+        
+        /* 列表載入動畫 (Stagger Effect) */
+        #player-list .player-card, #room-list .room-item {
+            animation: fadeInUp 0.4s ease forwards;
+        }
+        #player-list .player-card:nth-child(1) { animation-delay: 0.05s; }
+        #player-list .player-card:nth-child(2) { animation-delay: 0.1s; }
+        #player-list .player-card:nth-child(3) { animation-delay: 0.15s; }
+        #player-list .player-card:nth-child(4) { animation-delay: 0.2s; }
+        #player-list .player-card:nth-child(5) { animation-delay: 0.25s; }
+
+        .room-item:hover, .player-card:hover {
+            background: rgba(255, 255, 255, 0.06);
         }
 
-        .player-card {
-            background: #252525;
-            padding: 12px;
-            margin-bottom: 8px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid transparent;
+        /* 自己的卡片：用邊框強調，而不是發光 */
+        .player-card.is-me { 
+            border: 1px solid var(--primary); 
+            background: rgba(79, 70, 229, 0.1);
         }
-        .player-card.is-me { border-color: var(--primary); background: #1a2634; }
-        .player-card.dead { opacity: 0.5; background: #1a1a1a; }
+        .player-card.dead { 
+            opacity: 0.5; 
+            background: rgba(0, 0, 0, 0.2); 
+        }
         .player-card.dead strong { text-decoration: line-through; color: var(--danger); }
 
+        /* 詞語顯示卡片 - 高級卡紙風格 */
         .word-display {
-            background: linear-gradient(135deg, #2c3e50 0%, #000000 100%);
-            padding: 25px;
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            padding: 30px;
             text-align: center;
             font-size: 28px;
-            font-weight: bold;
-            border-radius: 12px;
-            margin: 20px 0;
-            color: #f1c40f;
-            border: 1px solid #444;
+            font-weight: 700;
+            border-radius: 16px;
+            margin: 25px 0;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.1);
             user-select: none;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
         }
+        
+        /* 隱藏狀態：深色紋理 */
+        .word-display.hidden {
+            background: repeating-linear-gradient(
+                45deg,
+                #1e293b,
+                #1e293b 10px,
+                #0f172a 10px,
+                #0f172a 20px
+            );
+            color: transparent;
+        }
+        .word-display.hidden::after {
+            content: "點擊查看身分";
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+        .word-display.hidden #my-word { opacity: 0; }
+        
+        /* 顯示狀態：高級金黃色漸層，無強烈發光 */
+        .word-display.revealed {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            color: white;
+            animation: subtle-pulse 3s infinite;
+        }
+        
+        .word-display:active { transform: scale(0.98); }
 
+        /* 標籤 Tag */
         .tag {
             font-size: 11px;
-            padding: 3px 6px;
-            border-radius: 4px;
-            background: #444;
-            color: #ddd;
-            margin-left: 5px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: #334155;
+            color: #cbd5e1;
+            margin-left: 8px;
             vertical-align: middle;
+            font-weight: 500;
         }
-        .tag.host { background: #f39c12; color: #000; }
-        .tag.vote-count { background: var(--danger); color: white; font-weight: bold; }
-        /* 分數標籤樣式 */
-        .tag.score { background: #262626; color: white; font-weight: bold; border: 1px solid #1a9bc7; }
+        .tag.host { background: var(--warning); color: #fff; }
+        .tag.vote-count { background: var(--danger); color: white; }
+        .tag.score { background: rgba(79, 70, 229, 0.2); color: #818cf8; border: 1px solid rgba(79, 70, 229, 0.3); }
 
         .vote-btn {
             background: var(--danger);
             width: auto;
-            padding: 6px 15px;
-            font-size: 13px;
+            padding: 6px 14px;
+            font-size: 12px;
             margin: 0;
             border-radius: 20px;
+            box-shadow: none;
+            border: none;
         }
+        .vote-btn:hover { background: #be123c; transform: none; }
 
         /* 自訂詞語區域 */
         #custom-words-area {
             display: none;
-            background: #252525;
+            background: rgba(0,0,0,0.2);
             padding: 15px;
-            border-radius: 8px;
-            border: 1px dashed #555;
-            margin-top: 10px;
+            border-radius: 12px;
+            border: 1px dashed #475569;
+            margin-top: 15px;
+            animation: fadeInUp 0.3s;
         }
         .custom-word-item {
             display: flex;
             justify-content: space-between;
-            background: #333;
-            padding: 5px 10px;
+            background: rgba(255,255,255,0.05);
+            padding: 8px 12px;
             margin-bottom: 5px;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 14px;
         }
 
-        /* 遮罩層 (顯示結果用) */
+        /* 遮罩層 (顯示結果用) - 簡潔有力 */
         #overlay-result {
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.95);
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(5px);
             z-index: 100;
             flex-direction: column;
             justify-content: center;
@@ -175,26 +321,41 @@
             color: white;
             text-align: center;
             padding: 20px;
+            animation: fadeIn 0.2s;
         }
-        .result-title { font-size: 20px; color: #888; margin-bottom: 10px; }
-        .result-name { font-size: 48px; font-weight: bold; color: var(--warning); margin: 10px 0; }
-        .result-role { font-size: 32px; margin-bottom: 30px; }
+        
+        .result-container {
+            animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            background: #1e293b;
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            width: 85%;
+            max-width: 350px;
+        }
+
+        .result-title { font-size: 14px; color: #94a3b8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;}
+        .result-name { font-size: 36px; font-weight: 800; color: white; margin: 10px 0; }
+        .result-role { font-size: 24px; margin-bottom: 25px; font-weight: 600; }
         .result-role.spy { color: var(--danger); }
         .result-role.civilian { color: var(--success); }
+        
         .result-status { 
-            font-size: 24px; 
-            border: 2px solid #555; 
-            padding: 10px 40px; 
+            font-size: 18px; 
+            border: 1px solid #475569; 
+            padding: 8px 24px; 
             border-radius: 50px; 
-            margin-top: 30px; 
+            margin-top: 20px; 
             display: inline-block;
-            background: #111;
+            background: #0f172a;
+            color: #cbd5e1;
         }
         
         .admin-nuke-btn {
             background: transparent;
-            border: 1px solid #555;
-            color: #666;
+            border: 1px solid #64748b;
+            color: #94a3b8;
             cursor: pointer;
             padding: 2px 6px;
             font-size: 10px;
@@ -203,76 +364,113 @@
         }
         .admin-nuke-btn:hover { background: var(--danger); color: white; border-color: var(--danger); }
         
-        /* 揭曉身分 / 管理員透視的標籤樣式 */
         .identity-reveal {
             font-size: 12px;
             font-family: monospace;
-            margin-top: 4px;
-            background: #000;
-            padding: 3px 6px;
+            margin-top: 6px;
+            background: rgba(0,0,0,0.3);
+            padding: 4px 8px;
             border-radius: 4px;
-            display: table; /* 讓它獨立一行且長度自適應 */
-            border-width: 1px;
-            border-style: solid;
+            display: table;
+            border-left-width: 3px;
+            border-left-style: solid;
         }
 
-        /* 聊天室樣式 */
+        /* 聊天室樣式 - 現代化對話框 */
         #chat-section {
-            margin-top: 20px;
-            border-top: 1px solid #333;
-            padding-top: 15px;
+            margin-top: 25px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 20px;
             display: flex;
             flex-direction: column;
-            height: 250px; /* 固定聊天室高度 */
+            height: 280px; 
         }
         #chat-messages {
             flex: 1;
-            background: var(--chat-bg);
-            border-radius: 8px;
-            padding: 10px;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 16px;
+            padding: 15px;
             overflow-y: auto;
-            margin-bottom: 10px;
-            border: 1px solid #333;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
             font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
-        .chat-msg { margin-bottom: 6px; line-height: 1.4; word-break: break-all; }
-        .chat-sender { color: var(--primary); font-weight: bold; margin-right: 5px; }
-        .chat-input-wrapper { display: flex; gap: 8px; }
-        .chat-input-wrapper input { margin: 0; flex: 1; }
-        .chat-input-wrapper button { width: auto; margin: 0; padding: 0 20px; }
+        
+        .chat-msg { 
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            line-height: 1.5;
+            word-break: break-all;
+            position: relative;
+            animation: fadeInUp 0.2s;
+            font-size: 14px;
+            background: #334155;
+            color: #f1f5f9;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        .chat-msg.is-me {
+            align-self: flex-end;
+            background: var(--primary);
+            color: white;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-sender { 
+            display: block;
+            font-size: 11px;
+            color: #94a3b8; 
+            margin-bottom: 2px;
+        }
+        .chat-msg.is-me .chat-sender { color: rgba(255,255,255,0.7); text-align: right;}
+        
+        .chat-input-wrapper { display: flex; gap: 10px; }
+        .chat-input-wrapper input { margin: 0; flex: 1; background: rgba(15, 23, 42, 0.6); border-radius: 20px; padding: 12px 18px;}
+        .chat-input-wrapper button { width: auto; margin: 0; padding: 0 20px; border-radius: 20px; background: var(--primary); }
 
     </style>
 </head>
 <body>
 
 <div id="overlay-result">
-    <div class="result-title">本輪投票結果</div>
-    <div id="res-name" class="result-name">???</div>
-    <div id="res-role" class="result-role">身分：<span id="res-role-text">---</span></div>
-    
-    <div id="res-game-status" class="result-status">遊戲繼續</div>
+    <div class="result-container">
+        <div class="result-title">本輪投票結果</div>
+        <div id="res-name" class="result-name">???</div>
+        <div id="res-role" class="result-role">身分：<span id="res-role-text">---</span></div>
+        
+        <div id="res-game-status" class="result-status">遊戲繼續</div>
 
-    <div style="margin-top: 50px; width: 100%; max-width: 300px;">
-        <button onclick="app.closeOverlay()" class="success">確認</button>
+        <div style="margin-top: 40px; width: 100%;">
+            <button onclick="app.closeOverlay()" class="secondary">關閉</button>
+        </div>
     </div>
 </div>
 
 <div class="container">
     <div id="screen-login" class="screen active">
         <h1>🕵️ 誰是臥底</h1>
-        <p style="text-align:center; color:var(--text-muted);">歡迎！ 請輸入暱稱</p>
-        <input type="text" id="username" placeholder="你的暱稱">
+        <p style="text-align:center; color:var(--text-muted); margin-bottom:30px; font-size:14px;">歡迎誰是臥底！在下方輸入暱稱開始遊戲！</p>
+        <input type="text" id="username" placeholder="請輸入你的暱稱..." autocomplete="off">
         <button onclick="app.login()">進入大廳</button>
     </div>
 
     <div id="screen-lobby" class="screen">
         <h2>遊戲大廳</h2>
-        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-            <span>玩家: <span id="display-name" style="font-weight:bold; color:var(--primary);"></span></span>
-            <button style="width:auto; margin:0;" onclick="app.showCreateRoom()">+ 創建房間</button>
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; background:rgba(255,255,255,0.05); padding:12px; border-radius:12px;">
+            <span>玩家: <span id="display-name" style="font-weight:600; color:var(--text);"></span></span>
+            <button class="success small-btn" onclick="app.showCreateRoom()">+ 創建房間</button>
         </div>
-        <h3>房間列表</h3>
-        <div id="room-list">正在讀取...</div>
+        <h3 style="text-align:left; font-size:14px; color:var(--text-muted); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; margin-bottom:15px;">房間列表</h3>
+        <div id="room-list">
+            <div style="text-align:center; padding:20px; color:var(--text-muted);">正在連接伺服器...</div>
+        </div>
     </div>
 
     <div id="screen-create" class="screen">
@@ -292,71 +490,73 @@
             <label style="margin-bottom:5px; display:block;">獲勝積分設定</label>
             <div style="display:flex; gap:10px;">
                 <div style="flex:1;">
-                    <span style="font-size:12px; color:#aaa;">平民獲勝 (+分)</span>
+                    <span style="font-size:12px; color:var(--text-muted);">平民獲勝 (+分)</span>
                     <input type="number" id="score-civ" value="1" placeholder="1">
                 </div>
                 <div style="flex:1;">
-                    <span style="font-size:12px; color:#aaa;">臥底獲勝 (+分)</span>
+                    <span style="font-size:12px; color:var(--text-muted);">臥底獲勝 (+分)</span>
                     <input type="number" id="score-spy" value="2" placeholder="2">
                 </div>
             </div>
         </div>
 
-        <div style="margin: 15px 0;">
+        <div style="margin: 20px 0;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <label style="margin:0;">詞語設定</label>
                 <button class="secondary small-btn" type="button" onclick="app.toggleCustomWords()">+ 自訂詞語</button>
             </div>
             
             <div id="custom-words-area">
-                <p style="margin:0 0 10px 0; font-size:12px; color:#aaa;">輸入後點擊「新增」。若有新增，遊戲將只使用此列表。</p>
-                <div style="display:flex; gap:5px;">
+                <p style="margin:0 0 10px 0; font-size:12px; color:var(--text-muted);">輸入後點擊「新增」。若有新增，遊戲將只使用此列表。</p>
+                <div style="display:flex; gap:10px;">
                     <input type="text" id="custom-civ" placeholder="平民詞 (如: 蘋果)" style="margin:0;">
                     <input type="text" id="custom-spy" placeholder="臥底詞 (如: 香蕉)" style="margin:0;">
                 </div>
-                <button type="button" class="success small-btn" style="width:100%; margin-top:5px;" onclick="app.addCustomWord()">新增詞組</button>
+                <button type="button" class="success small-btn" style="width:100%; margin-top:10px;" onclick="app.addCustomWord()">新增詞組</button>
                 
                 <div id="custom-words-list" style="margin-top:10px; max-height:100px; overflow-y:auto;">
                     </div>
             </div>
         </div>
 
-        <button onclick="app.createRoom()">確認創建</button>
-        <button class="secondary" onclick="app.switchScreen('screen-lobby')">取消</button>
+        <div style="display:flex; gap:10px;">
+            <button class="secondary" onclick="app.switchScreen('screen-lobby')">取消</button>
+            <button onclick="app.createRoom()">確認創建</button>
+        </div>
     </div>
 
     <div id="screen-room" class="screen">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
             <div style="display:flex; flex-direction:column;">
-                <strong id="room-name-display" style="font-size: 18px; color: var(--primary);">房間名稱</strong>
-                <span id="room-id-display" style="font-size: 12px; color: #888;">房號: ----</span>
+                <strong id="room-name-display" style="font-size: 18px; color: var(--text);">房間名稱</strong>
+                <span id="room-id-display" style="font-size: 12px; color: var(--text-muted); font-family:monospace;">ID: ----</span>
             </div>
-            <button class="secondary" style="width:auto; padding:6px 12px; font-size:14px; margin:0;" onclick="app.leaveRoom()">
+            <button class="secondary small-btn" onclick="app.leaveRoom()">
                 離開
             </button>
         </div>
 
         <div id="game-area" style="display:none;">
-            <div class="word-display" id="word-card">
-                <div style="font-size:14px; color:#888; font-weight:normal; margin-bottom:5px;">你的詞語</div>
+            <div class="word-display hidden" id="word-card">
+                <div style="font-size:12px; opacity:0.7; margin-bottom:5px; text-transform: uppercase; letter-spacing:1px;">你的詞語🤫</div>
                 <span id="my-word">???</span>
             </div>
-            <p style="text-align:center; font-size:12px; color:#666; margin-top:-10px;">
-                點擊上方卡片可 隱藏/顯示
+            <p style="text-align:center; font-size:12px; color:var(--text-muted); margin-top:-15px; margin-bottom: 20px;">
+                👆 點擊卡片 查看/隱藏 你的詞語
             </p>
         </div>
 
-        <div style="display:flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
-            <h3 style="margin:0;">玩家列表 (<span id="player-count">0</span>人)</h3>
-            <span id="status-badge" class="tag" style="font-size:14px; padding: 4px 8px;">等待中</span>
+        <div style="display:flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px;">
+            <h3 style="margin:0; font-size:15px; color:var(--text-muted);">玩家列表 (<span id="player-count">0</span>人)</h3>
+            <span id="status-badge" class="tag" style="font-size:12px; padding: 4px 10px;">等待中</span>
         </div>
         
         <div id="player-list"></div>
 
-        <div id="host-controls" style="display:none; border-top: 1px dashed #444; padding-top:15px; margin-top:20px;">
-            <p style="text-align:center; color:#666; font-size:12px; margin:0 0 10px 0;">👑 房主控制區</p>
+        <div id="host-controls" style="display:none; border-top: 1px dashed rgba(255,255,255,0.15); padding-top:20px; margin-top:20px;">
+            <p style="text-align:center; color:var(--warning); font-size:11px; margin:0 0 10px 0; letter-spacing:1px; font-weight:600;">HOST CONTROLS</p>
             
-            <button onclick="app.startGame()" id="btn-start" class="success">開始遊戲</button>
+            <button onclick="app.startGame()" id="btn-start" class="success">🚀 開始遊戲</button>
             
             <div id="ingame-controls" style="display:none;">
                 <button onclick="app.startVoting()" id="btn-start-vote">📢 開始投票</button>
@@ -365,18 +565,18 @@
 
             <button onclick="app.nextRound()" id="btn-restart" style="display:none;">🔄 下一局 (換詞)</button>
             
-            <button class="danger" onclick="app.deleteRoom()" style="margin-top:15px; background: transparent; border:1px solid var(--danger); color: var(--danger);">
+            <button class="danger small-btn" onclick="app.deleteRoom()" style="margin-top:20px; background: transparent; border:1px solid var(--danger); color: var(--danger); opacity:0.7;">
                 ⚠️ 解散房間
             </button>
         </div>
 
         <div id="chat-section">
             <div id="chat-messages">
-                <div style="color:#666; font-style:italic;">歡迎來到聊天室！</div>
+                <div style="color:var(--text-muted); font-style:italic; text-align:center; padding:20px;">-- 聊天室已連接 --</div>
             </div>
             <div class="chat-input-wrapper">
-                <input type="text" id="chat-input" placeholder="說點什麼..." autocomplete="off">
-                <button onclick="app.sendChat()" class="small-btn">發送</button>
+                <input type="text" id="chat-input" placeholder="輸入訊息..." autocomplete="off">
+                <button onclick="app.sendChat()" class="small-btn">➤</button>
             </div>
         </div>
     </div>
@@ -386,7 +586,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getDatabase, ref, set, push, onValue, update, remove, onDisconnect, get, child, onChildAdded } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-    // --- 1. 配置與初始化 ---
+    // --- 1. 配置與初始化 (保持原樣) ---
     const firebaseConfig = {
         apiKey: "AIzaSyC7PZLTTNf17cfp9gCHudWiWX8SYPSCdDI",
         authDomain: "onlineeasyraygame.firebaseapp.com",
@@ -401,7 +601,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // --- 2. 新詞語庫 ---
+    // --- 2. 新詞語庫 (保持原樣) ---
     const rawWords = `
 守歲——熬夜
 打麻將——玩撲克牌
@@ -1033,12 +1233,12 @@ Facebook——Instagram
         return null;
     }).filter(p => p !== null && p[0] && p[1]);
 
-    // --- 3. 遊戲邏輯與全域變數 ---
+    // --- 3. 遊戲邏輯與全域變數 (完全保持原樣) ---
     window.gameState = {
         user: { name: "", id: "" },
         currentRoomId: null,
         isHost: false,
-        wordVisible: true,
+        wordVisible: false, // 預設改為 false 配合新的UI設計
         localVoteTarget: null,
         isAdmin: false,
         tempCustomWords: [], // 暫存自訂詞語
@@ -1419,7 +1619,7 @@ Facebook——Instagram
         const list = document.getElementById('room-list');
         list.innerHTML = "";
         if (!rooms) {
-            list.innerHTML = "<p style='text-align:center; color:#666'>目前沒有房間</p>";
+            list.innerHTML = "<p style='text-align:center; color:var(--text-muted);'>目前沒有房間</p>";
             return;
         }
 
@@ -1440,13 +1640,16 @@ Facebook——Instagram
             // 這裡不再顯示 "/maxPlayers"，改為只顯示當前人數
             div.innerHTML = `
                 <div>
-                    <strong style="color:var(--primary); font-size:18px;">${roomName}</strong> 
-                    <span style="font-size:12px; color:#888; margin-left:10px;">ID:${key} (${pCount}人)</span>
+                    <strong style="color:var(--text); font-size:16px;">${roomName}</strong> 
+                    <span style="font-size:12px; color:var(--text-muted); margin-left:10px;">ID:${key}</span>
                     <br>
-                    <span class="tag ${room.status === 'playing' ? 'host' : ''}">${statusText}</span>
-                    ${adminControls}
+                    <div style="margin-top:6px;">
+                        <span class="tag ${room.status === 'playing' ? 'host' : ''}">${statusText}</span>
+                        <span class="tag" style="background:#334155;">${pCount}人</span>
+                        ${adminControls}
+                    </div>
                 </div>
-                <button style="width:auto; margin:0;" onclick="app.joinRoom('${key}')">加入</button>
+                <button class="small-btn secondary" style="width:auto; margin:0;" onclick="app.joinRoom('${key}')">加入</button>
             `;
             list.appendChild(div);
         });
@@ -1455,12 +1658,12 @@ Facebook——Instagram
     function enterRoom(roomId) {
         window.app.switchScreen('screen-room');
         // 先顯示 ID，稍後從數據庫獲取名稱
-        document.getElementById('room-id-display').innerText = `房號: ${roomId}`;
+        document.getElementById('room-id-display').innerText = `ID: ${roomId}`;
         document.getElementById('room-name-display').innerText = "載入中...";
 
         // 清空並初始化聊天室
         const chatContainer = document.getElementById('chat-messages');
-        chatContainer.innerHTML = '<div style="color:#666; font-style:italic; margin-bottom:5px;">-- 聊天室已連接 --</div>';
+        chatContainer.innerHTML = '<div style="color:var(--text-muted); font-style:italic; margin-bottom:5px; text-align:center;">-- 聊天室已連接 --</div>';
 
         // 監聽房間數據 (遊戲狀態、玩家列表)
         onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
@@ -1491,7 +1694,14 @@ Facebook——Instagram
         const container = document.getElementById('chat-messages');
         const div = document.createElement('div');
         div.className = 'chat-msg';
-        div.innerHTML = `<span class="chat-sender">${msg.sender}:</span>${msg.text}`;
+        
+        // 簡單判斷是否是自己發的 (如果暱稱相同)
+        const isMe = msg.sender === gameState.user.name;
+        if(isMe) {
+            div.classList.add('is-me');
+        }
+        
+        div.innerHTML = `<span class="chat-sender">${msg.sender}</span>${msg.text}`;
         container.appendChild(div);
         // 自動捲動到底部
         container.scrollTop = container.scrollHeight;
@@ -1531,19 +1741,30 @@ Facebook——Instagram
         const ingameControls = document.getElementById('ingame-controls');
         const btnStartVote = document.getElementById('btn-start-vote');
         const btnEndVote = document.getElementById('btn-end-vote');
+        const wordCard = document.getElementById('word-card');
 
         if (roomData.status === 'waiting') {
             gameArea.style.display = 'none';
             btnStart.style.display = 'block';
             ingameControls.style.display = 'none';
             btnRestart.style.display = 'none';
+            // 重置詞語卡顯示
+            gameState.wordVisible = false;
         } else {
             gameArea.style.display = 'block';
             btnStart.style.display = 'none';
             
             if (me && me.word) {
                 const w = document.getElementById('my-word');
-                w.innerText = gameState.wordVisible ? me.word : "已隱藏";
+                if (gameState.wordVisible) {
+                    w.innerText = me.word;
+                    wordCard.classList.remove('hidden');
+                    wordCard.classList.add('revealed');
+                } else {
+                    w.innerText = "???";
+                    wordCard.classList.add('hidden');
+                    wordCard.classList.remove('revealed');
+                }
             }
 
             if (gameState.isHost) {
@@ -1621,7 +1842,7 @@ Facebook——Instagram
             // --- 分數顯示邏輯 (僅在 waiting 或大廳階段顯示) ---
             let scoreHtml = '';
             if (status === 'waiting') {
-                scoreHtml = `<span class="tag score">score:${score}</span>`;
+                scoreHtml = `<span class="tag score">Score: ${score}</span>`;
             }
 
             const div = document.createElement('div');
@@ -1646,13 +1867,13 @@ Facebook——Instagram
             div.innerHTML = `
                 <div style="display:flex; align-items:center;">
                     <div style="display:flex; flex-direction:column;">
-                        <div style="color:${p.status==='dead'?'#777':'inherit'}">
-                            <strong>${p.name}</strong>
+                        <div style="color:${p.status==='dead'?'#94a3b8':'inherit'}">
+                            <strong style="font-weight:600;">${p.name}</strong>
                             ${showHostBadge ? '<span class="tag host">房主</span>' : ''}
                             ${isMe ? '<span class="tag">我</span>' : ''}
                             ${scoreHtml}
                         </div>
-                        ${p.status === 'dead' ? '<span style="font-size:10px; color:var(--danger);">(已出局)</span>' : ''}
+                        ${p.status === 'dead' ? '<span style="font-size:10px; color:var(--danger); font-weight:bold;">DEAD (已出局)</span>' : ''}
                         ${secretReveal}
                     </div>
                 </div>
@@ -1712,11 +1933,11 @@ Facebook——Instagram
 
         statusEl.innerText = result.statusText;
         if(result.type === 'win') {
-            statusEl.style.borderColor = '#f1c40f';
-            statusEl.style.color = '#f1c40f';
+            statusEl.style.borderColor = 'var(--warning)';
+            statusEl.style.color = 'var(--warning)';
         } else {
-            statusEl.style.borderColor = '#555';
-            statusEl.style.color = 'white';
+            statusEl.style.borderColor = '#475569';
+            statusEl.style.color = '#cbd5e1';
         }
 
         overlay.style.display = 'flex';
@@ -1725,8 +1946,24 @@ Facebook——Instagram
     document.getElementById('word-card').addEventListener('click', () => {
         gameState.wordVisible = !gameState.wordVisible;
         const w = document.getElementById('my-word');
-        if(!gameState.wordVisible) w.innerText = "已隱藏";
-        else w.innerText = "..."; 
+        const card = document.getElementById('word-card');
+        
+        if(!gameState.wordVisible) {
+             w.innerText = "???";
+             card.classList.add('hidden');
+             card.classList.remove('revealed');
+        } else {
+             w.innerText = "..."; 
+             card.classList.remove('hidden');
+             card.classList.add('revealed');
+             
+             const roomId = gameState.currentRoomId;
+             if(roomId) {
+                 get(child(ref(db), `rooms/${roomId}`)).then((snap) => {
+                     if(snap.exists()) updateRoomUI(snap.val());
+                 });
+             }
+        }
     });
 
 </script>

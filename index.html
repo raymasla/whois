@@ -132,7 +132,7 @@
         .tag.host { background: #f39c12; color: #000; }
         .tag.vote-count { background: var(--danger); color: white; font-weight: bold; }
         /* 分數標籤樣式 */
-        .tag.score { background: #67bad6; color: white; font-weight: bold; border: 1px solid #1a9bc7; }
+        .tag.score { background: #262626; color: white; font-weight: bold; border: 1px solid #1a9bc7; }
 
         .vote-btn {
             background: var(--danger);
@@ -281,24 +281,26 @@
         <label>房間名稱</label>
         <input type="text" id="room-name-input" placeholder="例如：可疑的房間" value="來當臥底囉">
 
-        <label>玩家總人數 (3-10)</label>
-        <select id="total-players">
-            <option value="3">3人</option>
-            <option value="4">4人</option>
-            <option value="5">5人</option>
-            <option value="6" selected>6人</option>
-            <option value="7">7人</option>
-            <option value="8">8人</option>
-            <option value="9">9人</option>
-            <option value="10">10人</option>
-        </select>
-
         <label>臥底人數</label>
         <select id="spy-count">
             <option value="1">1人</option>
             <option value="2">2人</option>
             <option value="3">3人</option>
         </select>
+
+        <div style="margin-top: 15px; margin-bottom: 5px;">
+            <label style="margin-bottom:5px; display:block;">獲勝積分設定</label>
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1;">
+                    <span style="font-size:12px; color:#aaa;">平民獲勝 (+分)</span>
+                    <input type="number" id="score-civ" value="1" placeholder="1">
+                </div>
+                <div style="flex:1;">
+                    <span style="font-size:12px; color:#aaa;">臥底獲勝 (+分)</span>
+                    <input type="number" id="score-spy" value="2" placeholder="2">
+                </div>
+            </div>
+        </div>
 
         <div style="margin: 15px 0;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -345,7 +347,7 @@
         </div>
 
         <div style="display:flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
-            <h3 style="margin:0;">玩家列表 (<span id="player-count">0</span>/<span id="max-player-count">0</span>)</h3>
+            <h3 style="margin:0;">玩家列表 (<span id="player-count">0</span>人)</h3>
             <span id="status-badge" class="tag" style="font-size:14px; padding: 4px 8px;">等待中</span>
         </div>
         
@@ -399,7 +401,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // --- 2. 新詞語庫 (已替換) ---
+    // --- 2. 新詞語庫 ---
     const rawWords = `
 守歲——熬夜
 打麻將——玩撲克牌
@@ -1080,6 +1082,8 @@ Facebook——Instagram
             document.getElementById('custom-civ').value = '';
             document.getElementById('custom-spy').value = '';
             document.getElementById('room-name-input').value = "來當臥底囉"; // 重置預設名稱
+            document.getElementById('score-civ').value = 1;
+            document.getElementById('score-spy').value = 2;
             window.app.switchScreen('screen-create');
         },
 
@@ -1107,11 +1111,17 @@ Facebook——Instagram
         },
 
         createRoom: async () => {
-            const maxPlayers = parseInt(document.getElementById('total-players').value);
+            // 不再讀取總人數限制，設定一個極大值或內部邏輯忽略
+            const maxPlayers = 999; 
             const spyCount = parseInt(document.getElementById('spy-count').value);
-            const roomName = document.getElementById('room-name-input').value.trim() || "未命名房間"; // 獲取房間名稱
+            const roomName = document.getElementById('room-name-input').value.trim() || "未命名房間"; 
             
-            if (spyCount >= maxPlayers) return alert("臥底人數不能大於或等於總人數！");
+            // 讀取分數設定
+            const civScore = parseInt(document.getElementById('score-civ').value) || 10;
+            const spyScore = parseInt(document.getElementById('score-spy').value) || 20;
+            
+            // 簡單檢查
+            if (spyCount < 1) return alert("臥底至少要有一人");
 
             const roomId = Math.floor(1000 + Math.random() * 9000).toString();
             gameState.currentRoomId = roomId;
@@ -1120,10 +1130,14 @@ Facebook——Instagram
             const roomRef = ref(db, 'rooms/' + roomId);
             await set(roomRef, {
                 config: { 
-                    roomName, // 儲存房間名稱
+                    roomName, 
                     maxPlayers, 
                     spyCount,
-                    customWords: gameState.tempCustomWords 
+                    customWords: gameState.tempCustomWords,
+                    scoreSettings: { // 儲存分數設定
+                        civ: civScore,
+                        spy: spyScore
+                    }
                 },
                 status: 'waiting', 
                 players: {
@@ -1132,7 +1146,7 @@ Facebook——Instagram
                         isHost: true,
                         status: 'alive',
                         votes: 0,
-                        score: 0, // 初始化分數
+                        score: 0, 
                         voteTarget: null
                     }
                 },
@@ -1166,7 +1180,7 @@ Facebook——Instagram
                 isHost: false,
                 status: 'alive',
                 votes: 0,
-                score: 0, // 初始化分數
+                score: 0, 
                 voteTarget: null
             });
             
@@ -1182,9 +1196,7 @@ Facebook——Instagram
             gameState.currentRoomId = null;
             gameState.isHost = false;
             
-            // 清除聊天監聽器 (雖然切換畫面會重新綁定，但養成好習慣)
             if (gameState.chatListener) {
-                // Firebase v9 的 off 比較複雜，這邊依賴切換頁面重置
                 gameState.chatListener = null;
             }
 
@@ -1215,6 +1227,13 @@ Facebook——Instagram
             const roomSnapshot = await get(child(ref(db), `rooms/${roomId}`));
             const roomData = roomSnapshot.val();
             
+            // 檢查人數是否足夠 (至少要大於臥底人數 + 1)
+            const playerCount = Object.keys(roomData.players || {}).length;
+            if (playerCount <= roomData.config.spyCount + 1) {
+                alert(`人數不足！目前 ${playerCount} 人，臥底設定 ${roomData.config.spyCount} 人。至少需要 ${roomData.config.spyCount + 2} 人才能開始。`);
+                return;
+            }
+
             let currentPool = wordPairs; 
             
             if (roomData.config && roomData.config.customWords && roomData.config.customWords.length > 0) {
@@ -1255,6 +1274,12 @@ Facebook——Instagram
         endVoting: async () => {
             const roomId = gameState.currentRoomId;
             
+            // 獲取房間設定以讀取分數
+            const configSnapshot = await get(child(ref(db), `rooms/${roomId}/config`));
+            const config = configSnapshot.val();
+            const civWinScore = (config.scoreSettings && config.scoreSettings.civ) ? parseInt(config.scoreSettings.civ) : 10;
+            const spyWinScore = (config.scoreSettings && config.scoreSettings.spy) ? parseInt(config.scoreSettings.spy) : 20;
+
             onValue(ref(db, `rooms/${roomId}/players`), async (snapshot) => {
                 const players = snapshot.val();
                 if(!players) return;
@@ -1323,7 +1348,7 @@ Facebook——Instagram
                         nextStatus = 'playing'; 
                     }
 
-                    // --- 分數計算邏輯 ---
+                    // --- 分數計算邏輯 (修正版) ---
                     if (winningTeam) {
                         Object.keys(players).forEach(pid => {
                             const p = players[pid];
@@ -1335,13 +1360,15 @@ Facebook——Instagram
                             let pStatus = p.status;
                             if (pid === eliminatedId) pStatus = 'dead';
 
-                            if (winningTeam === 'spy' && p.role === 'spy') {
-                                // 臥底獲勝，所有臥底(不論死活) +20
-                                addedScore = 20;
-                            } else if (winningTeam === 'civilian' && p.role === 'civilian') {
-                                // 平民獲勝，只有"活著"的平民 +10
-                                if (pStatus === 'alive') {
-                                    addedScore = 10;
+                            if (winningTeam === 'spy') {
+                                // 臥底獲勝：臥底不論有沒有被票出，只要是臥底獲勝，都會得分
+                                if (p.role === 'spy') {
+                                    addedScore = spyWinScore;
+                                }
+                            } else if (winningTeam === 'civilian') {
+                                // 平民獲勝：只有「沒被票出」(alive) 的平民會獲分
+                                if (p.role === 'civilian' && pStatus === 'alive') {
+                                    addedScore = civWinScore;
                                 }
                             }
 
@@ -1410,10 +1437,11 @@ Facebook——Instagram
 
             const div = document.createElement('div');
             div.className = 'room-item';
+            // 這裡不再顯示 "/maxPlayers"，改為只顯示當前人數
             div.innerHTML = `
                 <div>
                     <strong style="color:var(--primary); font-size:18px;">${roomName}</strong> 
-                    <span style="font-size:12px; color:#888; margin-left:10px;">ID:${key} (${pCount}/${room.config.maxPlayers}人)</span>
+                    <span style="font-size:12px; color:#888; margin-left:10px;">ID:${key} (${pCount}人)</span>
                     <br>
                     <span class="tag ${room.status === 'playing' ? 'host' : ''}">${statusText}</span>
                     ${adminControls}
@@ -1480,7 +1508,9 @@ Facebook——Instagram
         }
 
         document.getElementById('player-count').innerText = Object.keys(players).length;
-        document.getElementById('max-player-count').innerText = roomData.config.maxPlayers;
+        // 移除人數上限顯示
+        // document.getElementById('max-player-count').innerText = roomData.config.maxPlayers;
+        
         document.getElementById('status-badge').innerText = 
             roomData.status === 'voting' ? '投票中' : (roomData.status === 'waiting' ? '等待中' : '遊戲中');
 

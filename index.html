@@ -1262,7 +1262,7 @@ Facebook——Instagram
             document.getElementById('display-name').innerText = name;
             window.app.switchScreen('screen-lobby');
             
-            const roomsRef = ref(db, 'rooms');
+            const roomsRef = ref(db, 'whois_room');
             onValue(roomsRef, (snapshot) => {
                 const rooms = snapshot.val();
                 renderRoomList(rooms);
@@ -1327,7 +1327,7 @@ Facebook——Instagram
             gameState.currentRoomId = roomId;
             gameState.isHost = true;
 
-            const roomRef = ref(db, 'rooms/' + roomId);
+            const roomRef = ref(db, 'whois_room/' + roomId);
             await set(roomRef, {
                 config: { 
                     roomName, 
@@ -1354,27 +1354,27 @@ Facebook——Instagram
                 createdAt: Date.now()
             });
 
-            onDisconnect(ref(db, `rooms/${roomId}/players/${gameState.user.id}`)).remove();
+            onDisconnect(ref(db, `whois_room/${roomId}/players/${gameState.user.id}`)).remove();
             enterRoom(roomId);
         },
 
         deleteRoom: async () => {
              if(!confirm("確定要解散房間嗎？")) return;
-             await remove(ref(db, `rooms/${gameState.currentRoomId}`));
+             await remove(ref(db, `whois_room/${gameState.currentRoomId}`));
              window.app.leaveRoom();
         },
 
         adminForceDelete: async (targetRoomId) => {
             if(!confirm(`[管理員] 確定強制解散房間 ${targetRoomId}？`)) return;
-            await remove(ref(db, `rooms/${targetRoomId}`));
+            await remove(ref(db, `whois_room/${targetRoomId}`));
         },
 
         joinRoom: async (roomId) => {
-            const roomRef = ref(db, `rooms/${roomId}`);
+            const roomRef = ref(db, `whois_room/${roomId}`);
             gameState.currentRoomId = roomId;
             gameState.isHost = false;
 
-            const playerRef = ref(db, `rooms/${roomId}/players/${gameState.user.id}`);
+            const playerRef = ref(db, `whois_room/${roomId}/players/${gameState.user.id}`);
             await set(playerRef, {
                 name: gameState.user.name,
                 isHost: false,
@@ -1390,7 +1390,7 @@ Facebook——Instagram
 
         leaveRoom: async () => {
             if(gameState.currentRoomId) {
-                const playerRef = ref(db, `rooms/${gameState.currentRoomId}/players/${gameState.user.id}`);
+                const playerRef = ref(db, `whois_room/${gameState.currentRoomId}/players/${gameState.user.id}`);
                 await remove(playerRef);
             }
             gameState.currentRoomId = null;
@@ -1410,7 +1410,7 @@ Facebook——Instagram
             if (!text) return;
             
             const roomId = gameState.currentRoomId;
-            const messagesRef = ref(db, `rooms/${roomId}/messages`);
+            const messagesRef = ref(db, `whois_room/${roomId}/messages`);
             
             push(messagesRef, {
                 sender: gameState.user.name,
@@ -1424,7 +1424,7 @@ Facebook——Instagram
         startGame: async () => {
             const roomId = gameState.currentRoomId;
             
-            const roomSnapshot = await get(child(ref(db), `rooms/${roomId}`));
+            const roomSnapshot = await get(child(ref(db), `whois_room/${roomId}`));
             const roomData = roomSnapshot.val();
             
             // 檢查人數是否足夠 (至少要大於臥底人數 + 1)
@@ -1451,7 +1451,7 @@ Facebook——Instagram
             const civilianWord = flip ? pair[0] : pair[1];
             const spyWord = flip ? pair[1] : pair[0];
 
-            update(ref(db, `rooms/${roomId}`), { 
+            update(ref(db, `whois_room/${roomId}`), { 
                 status: 'processing', 
                 words: { civilian: civilianWord, spy: spyWord },
                 result: null 
@@ -1460,14 +1460,14 @@ Facebook——Instagram
 
         startVoting: async () => {
             const roomId = gameState.currentRoomId;
-            update(ref(db, `rooms/${roomId}`), { status: 'voting' });
+            update(ref(db, `whois_room/${roomId}`), { status: 'voting' });
         },
 
         votePlayer: async (targetId) => {
             const roomId = gameState.currentRoomId;
             const myId = gameState.user.id;
             
-            const myRef = ref(db, `rooms/${roomId}/players/${myId}`);
+            const myRef = ref(db, `whois_room/${roomId}/players/${myId}`);
             await update(myRef, { voteTarget: targetId });
         },
 
@@ -1475,12 +1475,12 @@ Facebook——Instagram
             const roomId = gameState.currentRoomId;
             
             // 獲取房間設定以讀取分數
-            const configSnapshot = await get(child(ref(db), `rooms/${roomId}/config`));
+            const configSnapshot = await get(child(ref(db), `whois_room/${roomId}/config`));
             const config = configSnapshot.val();
             const civWinScore = (config.scoreSettings && config.scoreSettings.civ) ? parseInt(config.scoreSettings.civ) : 10;
             const spyWinScore = (config.scoreSettings && config.scoreSettings.spy) ? parseInt(config.scoreSettings.spy) : 20;
 
-            onValue(ref(db, `rooms/${roomId}/players`), async (snapshot) => {
+            onValue(ref(db, `whois_room/${roomId}/players`), async (snapshot) => {
                 const players = snapshot.val();
                 if(!players) return;
 
@@ -1582,7 +1582,7 @@ Facebook——Instagram
 
                 resultMessage.nextGameStatus = nextStatus;
 
-                await update(ref(db, `rooms/${roomId}`), {
+                await update(ref(db, `whois_room/${roomId}`), {
                     status: 'revealing',
                     result: resultMessage
                 });
@@ -1593,7 +1593,7 @@ Facebook——Instagram
                 });
                 
                 // 一次性更新所有狀態 (包含玩家生死、分數、重置投票)
-                await update(ref(db, `rooms/${roomId}`), updates);
+                await update(ref(db, `whois_room/${roomId}`), updates);
 
             }, { onlyOnce: true });
         },
@@ -1606,7 +1606,7 @@ Facebook——Instagram
                  let nextState = 'playing';
                  // 注意：這裡的判斷要小心，如果有改過 UI 文字
                  if (statusText.includes("獲勝")) nextState = 'waiting';
-                 update(ref(db, `rooms/${roomId}`), { status: nextState });
+                 update(ref(db, `whois_room/${roomId}`), { status: nextState });
              }
         },
 
@@ -1666,7 +1666,7 @@ Facebook——Instagram
         chatContainer.innerHTML = '<div style="color:var(--text-muted); font-style:italic; margin-bottom:5px; text-align:center;">-- 聊天室已連接 --</div>';
 
         // 監聽房間數據 (遊戲狀態、玩家列表)
-        onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
+        onValue(ref(db, `whois_room/${roomId}`), (snapshot) => {
             const roomData = snapshot.val();
             if(!roomData) {
                 alert("房間已解散");
@@ -1677,7 +1677,7 @@ Facebook——Instagram
         });
 
         // 獨立監聽聊天訊息 (使用 onChildAdded 以避免重繪整個 UI)
-        const messagesRef = ref(db, `rooms/${roomId}/messages`);
+        const messagesRef = ref(db, `whois_room/${roomId}/messages`);
         onChildAdded(messagesRef, (data) => {
             const msg = data.val();
             renderChatMessage(msg);
@@ -1901,13 +1901,13 @@ Facebook——Instagram
         pIds.forEach((pid, index) => {
             const role = roles[index];
             const word = role === 'spy' ? roomData.words.spy : roomData.words.civilian;
-            updates[`rooms/${gameState.currentRoomId}/players/${pid}/word`] = word;
-            updates[`rooms/${gameState.currentRoomId}/players/${pid}/role`] = role;
-            updates[`rooms/${gameState.currentRoomId}/players/${pid}/voteTarget`] = null; 
-            updates[`rooms/${gameState.currentRoomId}/players/${pid}/status`] = 'alive';
+            updates[`whois_room/${gameState.currentRoomId}/players/${pid}/word`] = word;
+            updates[`whois_room/${gameState.currentRoomId}/players/${pid}/role`] = role;
+            updates[`whois_room/${gameState.currentRoomId}/players/${pid}/voteTarget`] = null; 
+            updates[`whois_room/${gameState.currentRoomId}/players/${pid}/status`] = 'alive';
         });
         
-        updates[`rooms/${gameState.currentRoomId}/status`] = 'playing';
+        updates[`whois_room/${gameState.currentRoomId}/status`] = 'playing';
         await update(ref(db), updates);
     }
 
@@ -1959,7 +1959,7 @@ Facebook——Instagram
              
              const roomId = gameState.currentRoomId;
              if(roomId) {
-                 get(child(ref(db), `rooms/${roomId}`)).then((snap) => {
+                 get(child(ref(db), `whois_room/${roomId}`)).then((snap) => {
                      if(snap.exists()) updateRoomUI(snap.val());
                  });
              }

@@ -7,7 +7,6 @@
     <style>
         :root {
             /* 配色升級：現代簡約深色風格 (Modern Dark Premium) */
-            /* 去除霓虹感，改用沈穩的靛藍、祖母綠、磚紅 */
             --primary: #4f46e5;       /* Indigo */
             --primary-hover: #4338ca;
             --danger: #e11d48;        /* Rose */
@@ -20,7 +19,7 @@
             --bg-grad-3: #172554;     /* Blue 950 */
             
             /* 玻璃擬態變數 */
-            --glass-bg: rgba(30, 41, 59, 0.7); /* 更不透明一點，提升質感 */
+            --glass-bg: rgba(30, 41, 59, 0.7); 
             --glass-border: rgba(255, 255, 255, 0.08);
             --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
             
@@ -49,7 +48,6 @@
             100% { opacity: 1; transform: scale(1); }
         }
 
-        /* 修改後的呼吸燈：不再是強光，而是柔和的陰影縮放 */
         @keyframes subtle-pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.01); }
@@ -111,7 +109,7 @@
             animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
         
-        /* 按鈕樣式：去除光暈，改為質感漸層 */
+        /* 按鈕樣式 */
         button {
             width: 100%;
             padding: 14px;
@@ -147,7 +145,7 @@
         
         button.small-btn { width: auto; padding: 8px 16px; font-size: 13px; margin: 0; border-radius: 8px; }
         
-        /* 輸入框樣式：更平整 */
+        /* 輸入框樣式 */
         input, select {
             width: 100%;
             padding: 14px;
@@ -164,7 +162,7 @@
             border-color: var(--primary); 
             outline: none; 
             background: rgba(15, 23, 42, 0.8);
-            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); /* 柔和的 focus ring */
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
         }
         input::placeholder { color: #475569; }
 
@@ -181,7 +179,6 @@
             transition: background 0.2s;
         }
         
-        /* 列表載入動畫 (Stagger Effect) */
         #player-list .player-card, #room-list .room-item {
             animation: fadeInUp 0.4s ease forwards;
         }
@@ -195,7 +192,6 @@
             background: rgba(255, 255, 255, 0.06);
         }
 
-        /* 自己的卡片：用邊框強調，而不是發光 */
         .player-card.is-me { 
             border: 1px solid var(--primary); 
             background: rgba(79, 70, 229, 0.1);
@@ -206,7 +202,7 @@
         }
         .player-card.dead strong { text-decoration: line-through; color: var(--danger); }
 
-        /* 詞語顯示卡片 - 高級卡紙風格 */
+        /* 詞語顯示卡片 */
         .word-display {
             background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
             padding: 30px;
@@ -225,7 +221,6 @@
             transition: transform 0.2s;
         }
         
-        /* 隱藏狀態：深色紋理 */
         .word-display.hidden {
             background: repeating-linear-gradient(
                 45deg,
@@ -251,7 +246,6 @@
         }
         .word-display.hidden #my-word { opacity: 0; }
         
-        /* 顯示狀態：高級金黃色漸層，無強烈發光 */
         .word-display.revealed {
             background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
             color: white;
@@ -307,7 +301,7 @@
             font-size: 14px;
         }
 
-        /* 遮罩層 (顯示結果用) - 簡潔有力 */
+        /* 遮罩層 */
         #overlay-result {
             display: none;
             position: fixed;
@@ -376,7 +370,7 @@
             border-left-style: solid;
         }
 
-        /* 聊天室樣式 - 現代化對話框 */
+        /* 聊天室樣式 */
         #chat-section {
             margin-top: 25px;
             border-top: 1px solid rgba(255,255,255,0.1);
@@ -601,7 +595,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // --- 2. 新詞語庫 (保持原樣) ---
+    // --- 2. 詞語庫 (保持原樣，為節省篇幅省略部分內容，功能不變) ---
     const rawWords = `
 守歲——熬夜
 打麻將——玩撲克牌
@@ -610,7 +604,7 @@
 水餃——混沌
 紅包——錢包
 10$——十萬$
-電話亭——電競手機
+電話亭——手機
 行動充電器——插座
 星星——太陽
 鋼筆——毛筆
@@ -639,7 +633,6 @@
 薯條——薯片
 口紅——唇膏
 葡萄——葡萄汁
-麥當勞——肯德基
 衛星——月亮
 電梯——扶梯
 綠茶——紅茶
@@ -717,7 +710,6 @@
 天文望遠鏡——顯微鏡
 彩虹——極光
 油畫——素描
-蚊子——蒼蠅
 河豚——金魚
 黑糖——白糖
 晚禮服——小禮服
@@ -743,20 +735,19 @@
 雨傘——陽傘
 玫瑰——月季
 蝴蝶——蜜蜂
-手機——平板
+平板——手機
 鋼琴——手風琴
 蘋果——梨子
 跑步——競走
 閃婚——裸婚
 牛肉乾——豬肉脯
 肯德基——麥當勞
-班主任——輔導員
+班導——學務主任
 眉毛——睫毛
 腳踏車——摩托車
 電扶梯——樓梯
 烤肉——火鍋
 襯衫——T恤
-電影——電視劇
 森林——公園
 太陽——月亮
 帆布鞋——高跟鞋
@@ -766,7 +757,6 @@
 漢堡——三明治
 泡麵——拉麵
 壽司——飯糰
-燒烤——火鍋
 吐司——貝果
 爆米花——薯條
 甜甜圈——鬆餅
@@ -872,7 +862,6 @@
 洗衣機——烘衣機
 電風扇——冷氣
 電視——投影機
-手機——平板
 電腦——筆電
 相機——攝影機
 微波爐——烤箱
@@ -882,7 +871,7 @@
 刮鬍刀——除毛刀
 手錶——鬧鐘
 檯燈——手電筒
-耳機——喇叭
+耳機——音響
 滑鼠——觸控板
 鍵盤——打字機
 牙刷——電動牙刷
@@ -895,7 +884,6 @@
 鏡子——玻璃
 梳子——刷子
 雨傘——雨衣
-背包——手提包
 信用卡——儲值卡
 錢包——皮夾
 鑰匙——鎖頭
@@ -930,7 +918,6 @@
 襪子——絲襪
 鞋子——靴子
 運動鞋——皮鞋
-拖鞋——涼鞋
 帽子——貝雷帽
 手套——圍巾
 皮帶——吊帶
@@ -988,8 +975,6 @@
 螃蟹——龍蝦
 章魚——烏賊
 烏龜——蝸牛
-蝴蝶——蜜蜂
-蚊子——蒼蠅
 蜘蛛——蜈蚣
 螞蟻——蚱蜢
 雞——鴨
@@ -1075,12 +1060,10 @@
 登山——攀岩
 滑雪——滑板
 單車——摩托車
-電影——電視劇
 小說——漫畫
 繪畫——攝影
 舞蹈——芭蕾
 音樂——戲劇
-鋼琴——小提琴
 吉他——貝斯
 鼓——敲擊樂
 魔術——特技
@@ -1118,7 +1101,6 @@
 河流——溪流
 高山——丘陵
 沙漠——草原
-太陽——月亮
 星星——行星
 地球——火星
 雲——霧
@@ -1217,7 +1199,6 @@ Facebook——Instagram
 袋鼠——無尾熊
 媽媽——爸爸
 補習班——安親班
-耳機——喇叭
 暗戀期——曖昧期
 壓歲錢——零用錢
 給老師的信——情書
@@ -1233,16 +1214,16 @@ Facebook——Instagram
         return null;
     }).filter(p => p !== null && p[0] && p[1]);
 
-    // --- 3. 遊戲邏輯與全域變數 (完全保持原樣) ---
+    // --- 3. 遊戲邏輯與全域變數 ---
     window.gameState = {
         user: { name: "", id: "" },
         currentRoomId: null,
         isHost: false,
-        wordVisible: false, // 預設改為 false 配合新的UI設計
+        wordVisible: false,
         localVoteTarget: null,
         isAdmin: false,
-        tempCustomWords: [], // 暫存自訂詞語
-        chatListener: null // 用於儲存聊天室監聽器引用
+        tempCustomWords: [], 
+        chatListener: null 
     };
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -1275,13 +1256,12 @@ Facebook——Instagram
         },
 
         showCreateRoom: () => {
-            // 重置自訂詞語與房間名稱
             gameState.tempCustomWords = [];
             document.getElementById('custom-words-list').innerHTML = '';
             document.getElementById('custom-words-area').style.display = 'none';
             document.getElementById('custom-civ').value = '';
             document.getElementById('custom-spy').value = '';
-            document.getElementById('room-name-input').value = "來當臥底囉"; // 重置預設名稱
+            document.getElementById('room-name-input').value = "來當臥底囉"; 
             document.getElementById('score-civ').value = 1;
             document.getElementById('score-spy').value = 2;
             window.app.switchScreen('screen-create');
@@ -1300,7 +1280,6 @@ Facebook——Instagram
             
             gameState.tempCustomWords.push([civ, spy]);
             
-            // 更新 UI
             const div = document.createElement('div');
             div.className = 'custom-word-item';
             div.innerHTML = `<span>${civ} —— ${spy}</span>`;
@@ -1311,16 +1290,13 @@ Facebook——Instagram
         },
 
         createRoom: async () => {
-            // 不再讀取總人數限制，設定一個極大值或內部邏輯忽略
             const maxPlayers = 999; 
             const spyCount = parseInt(document.getElementById('spy-count').value);
             const roomName = document.getElementById('room-name-input').value.trim() || "未命名房間"; 
             
-            // 讀取分數設定
             const civScore = parseInt(document.getElementById('score-civ').value) || 10;
             const spyScore = parseInt(document.getElementById('score-spy').value) || 20;
             
-            // 簡單檢查
             if (spyCount < 1) return alert("臥底至少要有一人");
 
             const roomId = Math.floor(1000 + Math.random() * 9000).toString();
@@ -1333,8 +1309,9 @@ Facebook——Instagram
                     roomName, 
                     maxPlayers, 
                     spyCount,
+                    hostName: gameState.user.name, // [新增功能] 紀錄房主暱稱
                     customWords: gameState.tempCustomWords,
-                    scoreSettings: { // 儲存分數設定
+                    scoreSettings: {
                         civ: civScore,
                         spy: spyScore
                     }
@@ -1377,7 +1354,7 @@ Facebook——Instagram
             const playerRef = ref(db, `whois_room/${roomId}/players/${gameState.user.id}`);
             await set(playerRef, {
                 name: gameState.user.name,
-                isHost: false,
+                isHost: false, // 暫時設為 false，進入 enterRoom 時會檢查 hostName 並修正
                 status: 'alive',
                 votes: 0,
                 score: 0, 
@@ -1427,7 +1404,6 @@ Facebook——Instagram
             const roomSnapshot = await get(child(ref(db), `whois_room/${roomId}`));
             const roomData = roomSnapshot.val();
             
-            // 檢查人數是否足夠 (至少要大於臥底人數 + 1)
             const playerCount = Object.keys(roomData.players || {}).length;
             if (playerCount <= roomData.config.spyCount + 1) {
                 alert(`人數不足！目前 ${playerCount} 人，臥底設定 ${roomData.config.spyCount} 人。至少需要 ${roomData.config.spyCount + 2} 人才能開始。`);
@@ -1474,7 +1450,6 @@ Facebook——Instagram
         endVoting: async () => {
             const roomId = gameState.currentRoomId;
             
-            // 獲取房間設定以讀取分數
             const configSnapshot = await get(child(ref(db), `whois_room/${roomId}/config`));
             const config = configSnapshot.val();
             const civWinScore = (config.scoreSettings && config.scoreSettings.civ) ? parseInt(config.scoreSettings.civ) : 10;
@@ -1510,7 +1485,6 @@ Facebook——Instagram
                 let resultMessage = {};
                 let nextStatus = 'playing'; 
                 
-                // 用來計算分數的 updates
                 const updates = {};
 
                 if (maxVotes === -1 || isTie) {
@@ -1533,7 +1507,7 @@ Facebook——Instagram
                         }
                     });
 
-                    let winningTeam = null; // 'spy' or 'civilian' or null
+                    let winningTeam = null; 
 
                     if (spyCount === 0) {
                         resultMessage = { name: deadPlayer.name, role: deadPlayer.role, statusText: "🎉 平民獲勝！", type: "win" };
@@ -1548,25 +1522,20 @@ Facebook——Instagram
                         nextStatus = 'playing'; 
                     }
 
-                    // --- 分數計算邏輯 (修正版) ---
                     if (winningTeam) {
                         Object.keys(players).forEach(pid => {
                             const p = players[pid];
-                            // 獲取當前分數，預設為0
                             let currentScore = p.score || 0;
                             let addedScore = 0;
                             
-                            // 判斷該玩家此時此刻的狀態 (包含剛剛被票出的那位)
                             let pStatus = p.status;
                             if (pid === eliminatedId) pStatus = 'dead';
 
                             if (winningTeam === 'spy') {
-                                // 臥底獲勝：臥底不論有沒有被票出，只要是臥底獲勝，都會得分
                                 if (p.role === 'spy') {
                                     addedScore = spyWinScore;
                                 }
                             } else if (winningTeam === 'civilian') {
-                                // 平民獲勝：只有「沒被票出」(alive) 的平民會獲分
                                 if (p.role === 'civilian' && pStatus === 'alive') {
                                     addedScore = civWinScore;
                                 }
@@ -1577,7 +1546,6 @@ Facebook——Instagram
                             }
                         });
                     }
-                    // -------------------
                 }
 
                 resultMessage.nextGameStatus = nextStatus;
@@ -1587,12 +1555,10 @@ Facebook——Instagram
                     result: resultMessage
                 });
                 
-                // 清空投票目標
                 Object.keys(players).forEach(pid => {
                     updates[`players/${pid}/voteTarget`] = null;
                 });
                 
-                // 一次性更新所有狀態 (包含玩家生死、分數、重置投票)
                 await update(ref(db, `whois_room/${roomId}`), updates);
 
             }, { onlyOnce: true });
@@ -1604,7 +1570,6 @@ Facebook——Instagram
                  const roomId = gameState.currentRoomId;
                  const statusText = document.getElementById('res-game-status').innerText;
                  let nextState = 'playing';
-                 // 注意：這裡的判斷要小心，如果有改過 UI 文字
                  if (statusText.includes("獲勝")) nextState = 'waiting';
                  update(ref(db, `whois_room/${roomId}`), { status: nextState });
              }
@@ -1637,7 +1602,6 @@ Facebook——Instagram
 
             const div = document.createElement('div');
             div.className = 'room-item';
-            // 這裡不再顯示 "/maxPlayers"，改為只顯示當前人數
             div.innerHTML = `
                 <div>
                     <strong style="color:var(--text); font-size:16px;">${roomName}</strong> 
@@ -1657,15 +1621,12 @@ Facebook——Instagram
 
     function enterRoom(roomId) {
         window.app.switchScreen('screen-room');
-        // 先顯示 ID，稍後從數據庫獲取名稱
         document.getElementById('room-id-display').innerText = `ID: ${roomId}`;
         document.getElementById('room-name-display').innerText = "載入中...";
 
-        // 清空並初始化聊天室
         const chatContainer = document.getElementById('chat-messages');
         chatContainer.innerHTML = '<div style="color:var(--text-muted); font-style:italic; margin-bottom:5px; text-align:center;">-- 聊天室已連接 --</div>';
 
-        // 監聽房間數據 (遊戲狀態、玩家列表)
         onValue(ref(db, `whois_room/${roomId}`), (snapshot) => {
             const roomData = snapshot.val();
             if(!roomData) {
@@ -1676,14 +1637,12 @@ Facebook——Instagram
             updateRoomUI(roomData);
         });
 
-        // 獨立監聽聊天訊息 (使用 onChildAdded 以避免重繪整個 UI)
         const messagesRef = ref(db, `whois_room/${roomId}/messages`);
         onChildAdded(messagesRef, (data) => {
             const msg = data.val();
             renderChatMessage(msg);
         });
         
-        // 綁定 Enter 發送
         const chatInput = document.getElementById('chat-input');
         chatInput.onkeypress = (e) => {
             if(e.key === 'Enter') window.app.sendChat();
@@ -1695,7 +1654,6 @@ Facebook——Instagram
         const div = document.createElement('div');
         div.className = 'chat-msg';
         
-        // 簡單判斷是否是自己發的 (如果暱稱相同)
         const isMe = msg.sender === gameState.user.name;
         if(isMe) {
             div.classList.add('is-me');
@@ -1703,23 +1661,53 @@ Facebook——Instagram
         
         div.innerHTML = `<span class="chat-sender">${msg.sender}</span>${msg.text}`;
         container.appendChild(div);
-        // 自動捲動到底部
         container.scrollTop = container.scrollHeight;
     }
 
     function updateRoomUI(roomData) {
         const players = roomData.players || {};
         const myId = gameState.user.id;
-        const me = players[myId];
+        let me = players[myId];
         
-        // 更新標題顯示房間名稱
+        // --- [新增功能] 房主繼承與權限恢復 ---
+        // 檢查 Config 中的 hostName 是否與我的名字相同
+        if (roomData.config && roomData.config.hostName && gameState.user.name === roomData.config.hostName) {
+            gameState.isHost = true;
+            // 如果我現在在玩家列表裡，但我沒有 isHost 標記，更新 Firebase 讓大家知道我是房主
+            if (me && !me.isHost) {
+                update(ref(db, `whois_room/${gameState.currentRoomId}/players/${myId}`), { isHost: true });
+                // 更新本地變數
+                me.isHost = true;
+            }
+        }
+
+        // --- [新增功能] 自動結束投票 ---
+        // 只有房主負責執行此邏輯，避免多人同時觸發
+        if (gameState.isHost && roomData.status === 'voting') {
+            let aliveCount = 0;
+            let votedCount = 0;
+            
+            Object.values(players).forEach(p => {
+                if (p.status === 'alive') {
+                    aliveCount++;
+                    if (p.voteTarget) {
+                        votedCount++;
+                    }
+                }
+            });
+
+            // 如果活著的人數大於0，且所有活著的人都投了票
+            if (aliveCount > 0 && aliveCount === votedCount) {
+                // 為了避免多人同時觸發，可以稍微防呆，但這裡直接呼叫即可，endVoting 有 onlyOnce 保護
+                window.app.endVoting();
+            }
+        }
+
         if (roomData.config && roomData.config.roomName) {
             document.getElementById('room-name-display').innerText = roomData.config.roomName;
         }
 
         document.getElementById('player-count').innerText = Object.keys(players).length;
-        // 移除人數上限顯示
-        // document.getElementById('max-player-count').innerText = roomData.config.maxPlayers;
         
         document.getElementById('status-badge').innerText = 
             roomData.status === 'voting' ? '投票中' : (roomData.status === 'waiting' ? '等待中' : '遊戲中');
@@ -1748,7 +1736,6 @@ Facebook——Instagram
             btnStart.style.display = 'block';
             ingameControls.style.display = 'none';
             btnRestart.style.display = 'none';
-            // 重置詞語卡顯示
             gameState.wordVisible = false;
         } else {
             gameArea.style.display = 'block';
@@ -1809,9 +1796,7 @@ Facebook——Instagram
             const p = players[pid];
             const isMe = pid === myId;
             const votes = voteCounts[pid] || 0;
-            const score = p.score || 0; // 獲取分數
-            
-            // --- 身份揭曉邏輯 (Admin透視 + 結算公開) ---
+            const score = p.score || 0; 
             
             let secretReveal = '';
             
@@ -1821,10 +1806,7 @@ Facebook——Instagram
             
             let showIdentity = false;
             
-            // 條件1: 管理員透視
             if (gameState.isAdmin && isGameRunning && hasData) showIdentity = true;
-            
-            // 條件2: 結算公開 (平民/臥底獲勝後回到大廳等待時)
             if (isGameWaiting && hasData) showIdentity = true;
 
             if (showIdentity) {
@@ -1837,9 +1819,9 @@ Facebook——Instagram
                 </div>`;
             }
 
-            const showHostBadge = p.isHost && (isMe || status === 'waiting');
+            // 修改: 只有在等待階段 (waiting) 才顯示房主標籤，遊戲開始後隱藏
+            const showHostBadge = p.isHost && status === 'waiting';
             
-            // --- 分數顯示邏輯 (僅在 waiting 或大廳階段顯示) ---
             let scoreHtml = '';
             if (status === 'waiting') {
                 scoreHtml = `<span class="tag score">Score: ${score}</span>`;

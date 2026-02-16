@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>誰是臥底</title>
+    <title>誰是臥底 - 斷線重連修復版</title>
     <style>
         :root {
             /* 配色升級：現代簡約深色風格 (Modern Dark Premium) */
@@ -601,7 +601,7 @@
 打麻將——玩撲克牌
 要紅包——找人討債
 鞭炮——煙火
-水餃——混沌
+水餃——餛飩
 紅包——錢包
 10$——十萬$
 電話亭——手機
@@ -1309,7 +1309,7 @@ Facebook——Instagram
                     roomName, 
                     maxPlayers, 
                     spyCount,
-                    hostName: gameState.user.name, // [新增功能] 紀錄房主暱稱
+                    hostName: gameState.user.name, 
                     customWords: gameState.tempCustomWords,
                     scoreSettings: {
                         civ: civScore,
@@ -1354,7 +1354,7 @@ Facebook——Instagram
             const playerRef = ref(db, `whois_room/${roomId}/players/${gameState.user.id}`);
             await set(playerRef, {
                 name: gameState.user.name,
-                isHost: false, // 暫時設為 false，進入 enterRoom 時會檢查 hostName 並修正
+                isHost: false, 
                 status: 'alive',
                 votes: 0,
                 score: 0, 
@@ -1430,7 +1430,8 @@ Facebook——Instagram
             update(ref(db, `whois_room/${roomId}`), { 
                 status: 'processing', 
                 words: { civilian: civilianWord, spy: spyWord },
-                result: null 
+                result: null,
+                round_record: null // 遊戲開始時，清空上一局的備份資料
             });
         },
 
@@ -1669,36 +1670,48 @@ Facebook——Instagram
         const myId = gameState.user.id;
         let me = players[myId];
         
-        // --- [新增功能] 房主繼承與權限恢復 ---
-        // 檢查 Config 中的 hostName 是否與我的名字相同
+        // --- [修復版] 斷線重連機制 ---
+        // 邏輯：如果遊戲正在進行，且我（現在這個ID）沒有詞語（因為剛刷新重連），就去 round_record 找找看有沒有我的名字。
+        if ((roomData.status === 'playing' || roomData.status === 'voting') && roomData.round_record) {
+            const myName = gameState.user.name;
+            
+            // 安全搜尋：遍歷所有備份紀錄，尋找名字相符的，避免 Key 值非法字元問題
+            const backupEntry = Object.values(roomData.round_record).find(r => r.name === myName);
+            
+            // 如果找到了備份，且我當前的玩家數據沒有詞語
+            if (backupEntry && me && (!me.word || me.word === '???')) {
+                // 1. 立即更新 Firebase，把詞語和身分補回去
+                const updates = {};
+                updates[`whois_room/${gameState.currentRoomId}/players/${myId}/word`] = backupEntry.word;
+                updates[`whois_room/${gameState.currentRoomId}/players/${myId}/role`] = backupEntry.role;
+                update(ref(db), updates);
+
+                // 2. 立即更新本地變數，讓下方的 UI 渲染能馬上顯示
+                me.word = backupEntry.word;
+                me.role = backupEntry.role;
+            }
+        }
+
+        // --- 房主繼承與權限恢復 ---
         if (roomData.config && roomData.config.hostName && gameState.user.name === roomData.config.hostName) {
             gameState.isHost = true;
-            // 如果我現在在玩家列表裡，但我沒有 isHost 標記，更新 Firebase 讓大家知道我是房主
             if (me && !me.isHost) {
                 update(ref(db, `whois_room/${gameState.currentRoomId}/players/${myId}`), { isHost: true });
-                // 更新本地變數
                 me.isHost = true;
             }
         }
 
-        // --- [新增功能] 自動結束投票 ---
-        // 只有房主負責執行此邏輯，避免多人同時觸發
+        // --- 自動結束投票 ---
         if (gameState.isHost && roomData.status === 'voting') {
             let aliveCount = 0;
             let votedCount = 0;
-            
             Object.values(players).forEach(p => {
                 if (p.status === 'alive') {
                     aliveCount++;
-                    if (p.voteTarget) {
-                        votedCount++;
-                    }
+                    if (p.voteTarget) votedCount++;
                 }
             });
-
-            // 如果活著的人數大於0，且所有活著的人都投了票
             if (aliveCount > 0 && aliveCount === votedCount) {
-                // 為了避免多人同時觸發，可以稍微防呆，但這裡直接呼叫即可，endVoting 有 onlyOnce 保護
                 window.app.endVoting();
             }
         }
@@ -1819,7 +1832,6 @@ Facebook——Instagram
                 </div>`;
             }
 
-            // 修改: 只有在等待階段 (waiting) 才顯示房主標籤，遊戲開始後隱藏
             const showHostBadge = p.isHost && status === 'waiting';
             
             let scoreHtml = '';
@@ -1880,16 +1892,31 @@ Facebook——Instagram
         }
 
         const updates = {};
+        const roundBackup = {}; 
+
         pIds.forEach((pid, index) => {
             const role = roles[index];
             const word = role === 'spy' ? roomData.words.spy : roomData.words.civilian;
+            
             updates[`whois_room/${gameState.currentRoomId}/players/${pid}/word`] = word;
             updates[`whois_room/${gameState.currentRoomId}/players/${pid}/role`] = role;
             updates[`whois_room/${gameState.currentRoomId}/players/${pid}/voteTarget`] = null; 
             updates[`whois_room/${gameState.currentRoomId}/players/${pid}/status`] = 'alive';
+
+            // [修正] 建立備份資料：使用 pid 作為 Key，內容包含暱稱，避免無效字元導致備份失敗
+            if (roomData.players && roomData.players[pid]) {
+                const pName = roomData.players[pid].name;
+                roundBackup[pid] = {
+                    name: pName,
+                    word: word,
+                    role: role
+                };
+            }
         });
         
+        updates[`whois_room/${gameState.currentRoomId}/round_record`] = roundBackup;
         updates[`whois_room/${gameState.currentRoomId}/status`] = 'playing';
+        
         await update(ref(db), updates);
     }
 
